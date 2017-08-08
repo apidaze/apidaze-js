@@ -7,29 +7,33 @@ console.log("WebRTC : " + JSON.stringify(WebRTCAdapter.browserDetails));
 
 var STATUS_INIT =                 1;
 var STATUS_WSOPENED =             2;
-var STATUS_LOCALSTREAM_ATTACHED = 4;
-var STATUS_NOTREADY =             8;
-var STATUS_CANDIDATES_RECEIVED =  16;
+var STATUS_RECVD_PONG =           4;
+var STATUS_LOCALSTREAM_ATTACHED = 8;
+var STATUS_NOTREADY =             16;
+var STATUS_CANDIDATES_RECEIVED =  32;
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | ' + 'CLIENT' + ' |';
 
 var CLIENT = function(configuration){
   let { type, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT } = configuration;
 
+  // User defined handlers
+  this._onDisconnected = onDisconnected || function(){ console.log(LOG_PREFIX, "Disconnected") };
+  this._onReady = onReady || function(){ console.log(LOG_PREFIX, "Ready") };
+  this._onError = function(message){
+    typeof onError === "function" ? onError(message) : console.log(LOG_PREFIX, "Error :", message);
+    throw {ok: false, message: message}
+  };
+
   if (!"WebSocket" in window) {
-    throw {ok: false, message: "WebSocket not supported"};
+    this._onError("WebSocket not supported")
   }
 
   if (!/wss:\/\//.test(wsurl)) {
-    throw {ok: false, message: "Wrong WebSocket URL, must start with wss://"};
+    this._onError("Wrong WebSocket URL, must start with wss://")
   }
 
   this._type = type;
   this._status = status;
-
-  // User defined handlers
-  this._onDisconnected = onDisconnected || function(){ console.log(LOG_PREFIX, "Disconnected") };
-  this._onReady = onReady || function(){ console.log(LOG_PREFIX, "Ready") };
-  this._onError = onError || function(){ console.log(LOG_PREFIX, "Error") };
 
   this._websocket = new WebSocket(wsurl);
   this._websocket.onopen = handleWebSocketOpen.bind(this);
@@ -46,32 +50,58 @@ CLIENT.prototype.type = function() {
 
 CLIENT.prototype.version = __VERSION__
 
+CLIENT.prototype.sendMessage = function(json){
+  console.log(LOG_PREFIX, "handleWebSocketMessage | C->S :", json);
+  this._websocket.send(json);
+}
+
 /**
- * Log connection event and update status
- */
+* Log connection event and update status
+*/
 const handleWebSocketOpen = function(){
   console.log(LOG_PREFIX, "handleWebSocketOpen |", "WebSocket opened");
   this._status *= STATUS_WSOPENED;
+
+  var request = {};
+  request.wsp_version = "1";
+  request.method = "ping";
+  request.params = {};
+  this.sendMessage(JSON.stringify(request));
 }
 
 /**
- * Call CLIENT.onError() and throw error
- */
-const handleWebSocketError = function(err){
+* Call CLIENT.onError() and throw error
+*/
+const handleWebSocketError = function(){
   console.log(LOG_PREFIX, "handleWebSocketError |", "Error ");
-  this._onError(error);
+  this._onError("WebSocket error");
 }
 
 /**
- * Handle messages from mod_verto
- */
+* Handle messages from mod_verto
+*/
 const handleWebSocketMessage = function(event){
-  console.log(LOG_PREFIX, "handleWebSocketMessage |", event);
+  console.log(LOG_PREFIX, "handleWebSocketMessage | S->C :", event.data);
+  let json = JSON.parse(event.data);
+
+  if (json.result) {
+    // Process reponse after request from gateway
+    if (json.result.message) {
+      switch (json.result.message) {
+        case "pong":
+        this._status *= STATUS_RECVD_PONG;
+        console.log("status = " + this._status);
+        return;
+        default:
+        break;
+      }
+    }
+  }
 }
 
- /**
-  * Log connection event, update status, call CLIENT.onDisconnected()
-  */
+/**
+* Log connection event, update status, call CLIENT.onDisconnected()
+*/
 const handleWebSocketClose = function(err){
   console.log(LOG_PREFIX, "handleWebSocketClose |", "WebSocket closed");
   this._status = STATUS_INIT;
