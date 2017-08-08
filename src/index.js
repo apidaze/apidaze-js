@@ -1,25 +1,10 @@
-import * as WebRTCAdapter from "webrtc-adapter";
-// somewhere in module
-console.log("WebRTC : " + JSON.stringify(WebRTCAdapter.browserDetails));
+import CLIENT from './CLIENT.js';
 
-let version = "2.0"
+var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
 
-var CLIENTBIS = function(configuration){
-  let { type } = configuration;
-  this._type = type;
-}
-
-CLIENTBIS.prototype.type = function() {
-  return this._type;
-}
-
-Object.defineProperties(CLIENTBIS, {
-  version: {
-    get: function(){ return '2.0'; }
-  }
-})
+var version = __VERSION__
 
 export {
   version,
-  CLIENTBIS
+  CLIENT
 }

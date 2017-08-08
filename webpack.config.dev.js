@@ -1,17 +1,12 @@
 const path = require('path');
-var childProcess = require('child_process'),
-VERSION = childProcess.execSync('git rev-parse HEAD').toString();
-
-console.log("VERSION : ", VERSION)
-
-new webpack.DefinePlugin({
-  PRODUCTION: JSON.stringify(true),
-})
+var childProcess = require('child_process');
+var webpack = require('webpack');
+GITBRANCH = childProcess.execSync('git branch | grep \\* | cut -d \" \" -f2').toString().trim();
 
 module.exports = {
   entry: './src/index.js',
   output: {
-    filename: "APIdaze-dev.js",
+    filename: "APIdaze-dev-" + GITBRANCH + ".js",
     library: 'APIdaze',
     libraryTarget: 'umd',
     path: path.resolve(__dirname, 'dist')
@@ -30,4 +25,11 @@ module.exports = {
     compress: true,
     port: 9000
   },
+  plugins: [
+    new webpack.DefinePlugin({
+        'process.env.__VERSION__': JSON.stringify(GITBRANCH),
+        'process.env.PRODUCTION': JSON.stringify(false),
+        'process.env.DEVELOPMENT': JSON.stringify(true),
+    })
+  ]
 };
