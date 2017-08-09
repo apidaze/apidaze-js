@@ -121,6 +121,16 @@ const handleWebSocketMessage = function(event){
         break;
       }
     }
+
+    if (json.result.action) {
+      switch(json.result.action){
+        case "sendDTMF":
+        console.log(LOG_PREFIX, "DTMF sent");
+        return;
+        default:
+        return;
+      }
+    }
   }
 
   let callID = json.params.callID;

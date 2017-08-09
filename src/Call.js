@@ -14,6 +14,7 @@ var Call = function(clientObj, params, listeners){
   this.remoteAudio.controls = "controls";
   this.localAudioStream = null;
   this.peerConnection = null;
+  this.callID = null;
 
   this.userParams = params;
   this.userRingingCallback = onRinging;
@@ -28,6 +29,8 @@ var Call = function(clientObj, params, listeners){
     throw {ok: false, message: message}
   };
 
+  this.sendDTMF = sendDTMF;
+
   // Wise to call getUserMedia again
   let self = this;
   navigator.mediaDevices.getUserMedia({audio: true, video: false})
@@ -41,6 +44,21 @@ var Call = function(clientObj, params, listeners){
     .catch(function(error){
       handleGUMError.call(self, error);
     });
+}
+
+function sendDTMF(digits){
+  console.log(LOG_PREFIX + "sendDTMF called, digits : " + digits);
+  console.log(LOG_PREFIX + "this.callID : " + this.callID);
+  var request = {};
+  request.wsp_version = "1";
+  request.method = "modify";
+  request.params = {
+    callID: this.callID,
+    action: "sendDTMF",
+    digits: digits
+  };
+
+  this.clientObj.sendMessage(JSON.stringify(request));
 }
 
 function setRemoteDescription(sdp){
