@@ -100,14 +100,52 @@ const handleWebSocketMessage = function(event){
         this._status *= STATUS_RECVD_PONG;
         this._onReady();
         return;
+
+        case "CALL CREATED":
+        let callID = json.result.callID;
+        let index = this._callArray.findIndex(function(callObj){
+          return callObj.callID === callID;
+        });
+        if (index < 0){
+          console.err(LOG_PREFIX, "Cannot find call with callID " + callID)
+        } else {
+          console.log(LOG_PREFIX, "Call created with callID " + callID);
+        }
+        return;
+
         default:
         break;
       }
     }
   }
 
-  if (json.method && json.method === "answer" && json.params && json.params.sdp) {
-    this._callArray[0].setRemoteDescription(json.params.sdp);
+  let callID = json.params.callID;
+  let index = this._callArray.findIndex(function(callObj){
+    return callObj.callID === callID;
+  });
+
+  if (index < 0){
+    console.err(LOG_PREFIX, "Cannot find call with callID " + callID)
+  }
+
+  switch(json.method){
+    case "answer":
+    console.log(LOG_PREFIX, "Found call index : " + index);
+    this._callArray[index].setRemoteDescription(json.params.sdp);
+
+    break;
+    case "hangup":
+    console.log(LOG_PREFIX, "Hangup call with callID " + this._callArray[index].callID);
+    this._callArray[index]._onHangup();
+    this._callArray[index] = null;
+    this._callArray.splice(index, 1);
+
+    break;
+    case "ringing":
+    console.log(LOG_PREFIX, "Ringing on call with callID " + this._callArray[index].callID);
+    this._callArray[index]._onRinging();
+
+    break;
   }
 }
 

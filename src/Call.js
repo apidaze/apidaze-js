@@ -12,10 +12,16 @@ var Call = function(clientObj, params, listeners){
   this.remoteAudio = document.createElement("audio");
   this.remoteAudio.autoplay = "autoplay";
   this.remoteAudio.controls = "controls";
+  this.localAudioStream = null;
+  this.peerConnection = null;
 
-  this._onRinging = function() { handleRinging(onRinging) };
-  this._onAnswer = function() { handleAnswer(onAnswer) };
-  this._onHangup = function() { handleHangup(onHangup) };
+  this.userRingingCallback = onRinging;
+  this.userAnswerCallback = onAnswer;
+  this.userHangupCallback = onHangup;
+
+  this._onRinging = handleRinging;
+  this._onAnswer = handleAnswer;
+  this._onHangup = handleHangup;
   this._onError = function(message){
     typeof onError === "function" ? onError(message) : console.log(LOG_PREFIX, "Error :", message);
     throw {ok: false, message: message}
@@ -122,6 +128,11 @@ function createPeerConnection(){
     }
   }
   this.peerConnection.oniceconnectionstatechange = function(event){
+    if (self.peerConnection === null){
+      console.log(LOG_PREFIX, "peerConnection is null, call has been hungup ?");
+      return;
+    }
+
     console.log(LOG_PREFIX, "ICE State : " + self.peerConnection.iceConnectionState);
     console.log(LOG_PREFIX, "ICE State : " + self.peerConnection.iceConnectionState);
     console.log(LOG_PREFIX, "ICE state change event: ", event);
@@ -159,6 +170,26 @@ function startCall(){
   request.params.sdp = this.peerConnection.localDescription.sdp;
   this.callID = callID;
   this.clientObj.sendMessage(JSON.stringify(request));
+}
+
+/**
+* Handle Hangup event received fro FreeSWITCH
+*/
+function handleHangup(){
+  console.log(LOG_PREFIX, "Call hungup");
+  let self = this;
+
+  this.localAudioStream.getTracks().forEach(
+    function(track) {
+      track.stop();
+    }
+  );
+
+  this.peerConnection.close();
+  this.remoteAudio = null;
+  this.peerConnection = null;
+  this.localAudioStream = null;
+  typeof this.userHangupCallback === "function" && this.userHangupCallback();
 }
 
 function handleRinging(userCallback){
