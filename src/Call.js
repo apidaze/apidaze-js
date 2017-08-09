@@ -15,6 +15,7 @@ var Call = function(clientObj, params, listeners){
   this.localAudioStream = null;
   this.peerConnection = null;
 
+  this.userParams = params;
   this.userRingingCallback = onRinging;
   this.userAnswerCallback = onAnswer;
   this.userHangupCallback = onHangup;
@@ -162,9 +163,9 @@ function startCall(){
   request.wsp_version = "1";
   request.method = "call";
   request.params = {
-    apiKey : "53ff9c9d",
+    apiKey : this.clientObj._apiKey,
     apiVersion : __VERSION__,
-    userKeys : {number_to_call: "1211312312"},
+    userKeys : this.userParams,
     callID: callID
   };
   request.params.sdp = this.peerConnection.localDescription.sdp;
@@ -201,7 +202,6 @@ function handleAnswer(userCallback){
   console.log(LOG_PREFIX, "Answer");
   typeof userCallback === "function" && userCallback();
 }
-
 
 function handleGUMSuccess(stream){
   console.log(LOG_PREFIX, "WebRTC Ok");

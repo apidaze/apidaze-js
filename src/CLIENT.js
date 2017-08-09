@@ -13,7 +13,7 @@ var STATUS_NOTREADY =             8;
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT |';
 
 var CLIENT = function(configuration){
-  let { type, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT } = configuration;
+  let { apiKey, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT } = configuration;
 
   // User defined handlers
   this._onDisconnected = onDisconnected || function(){ console.log(LOG_PREFIX, "Disconnected") };
@@ -22,6 +22,10 @@ var CLIENT = function(configuration){
     typeof onError === "function" ? onError(message) : console.log(LOG_PREFIX, "Error :", message);
     throw {ok: false, message: message}
   };
+
+  if (!apiKey){
+    this._onError("Please provide apiKey")
+  }
 
   if (!"WebSocket" in window) {
     this._onError("WebSocket not supported")
@@ -32,7 +36,7 @@ var CLIENT = function(configuration){
   }
 
   this._callArray = [];
-  this._type = type;
+  this._apiKey = apiKey;
   this._status = status;
 
   this._websocket = new WebSocket(wsurl);
@@ -128,10 +132,31 @@ const handleWebSocketMessage = function(event){
     console.err(LOG_PREFIX, "Cannot find call with callID " + callID)
   }
 
+  /**
+  * FreeSWITCH can send us its SDP from various actions :
+  * media (early media)
+  * answer
+  * ringing (if using <ringtone/> or <ringback/> from the API)
+  *
+  * We need to check whenever we get an SDP from FreeSWITCH and
+  * call setRemoteDescription right way
+  */
   switch(json.method){
+    case "media":
+    // In this case, we consider the call is ringing
+    console.log(LOG_PREFIX, "Found call index : " + index);
+    if (json.params.sdp){
+      this._callArray[index].setRemoteDescription(json.params.sdp);
+    }
+    this._callArray[index]._onRinging();
+
+    break;
     case "answer":
     console.log(LOG_PREFIX, "Found call index : " + index);
-    this._callArray[index].setRemoteDescription(json.params.sdp);
+    if (json.params.sdp){
+      this._callArray[index].setRemoteDescription(json.params.sdp);
+    }
+    this._callArray[index]._onAnswer();
 
     break;
     case "hangup":
@@ -143,6 +168,10 @@ const handleWebSocketMessage = function(event){
     break;
     case "ringing":
     console.log(LOG_PREFIX, "Ringing on call with callID " + this._callArray[index].callID);
+    // FS may send SDP along with ringing event
+    if (json.params.sdp){
+      this._callArray[index].setRemoteDescription(json.params.sdp);
+    }
     this._callArray[index]._onRinging();
 
     break;
