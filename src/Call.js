@@ -32,6 +32,8 @@ var Call = function(clientObj, params, listeners){
   // Functions that can be called by dev
   this.sendDTMF = sendDTMF;
   this.hangup = hangup;
+  this.stopLocalAudio = stopLocalAudio;
+  this.startLocalAudio = startLocalAudio;
 
   // Wise to call getUserMedia again
   let self = this;
@@ -46,6 +48,22 @@ var Call = function(clientObj, params, listeners){
     .catch(function(error){
       handleGUMError.call(self, error);
     });
+}
+
+function stopLocalAudio(){
+  this.localAudioStream.getAudioTracks().forEach(
+    function(track) {
+      track.enabled = false;
+    }
+  );
+}
+
+function startLocalAudio(){
+  this.localAudioStream.getAudioTracks().forEach(
+    function(track) {
+      track.enabled = true;
+    }
+  );
 }
 
 function sendDTMF(digits){

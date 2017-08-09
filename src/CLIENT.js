@@ -1,10 +1,6 @@
-import * as WebRTCAdapter from "webrtc-adapter";
 import Call from './Call.js';
 
 var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
-
-// somewhere in module
-console.log("WebRTC : " + JSON.stringify(WebRTCAdapter.browserDetails));
 
 var STATUS_INIT =                 1;
 var STATUS_WSOPENED =             2;
