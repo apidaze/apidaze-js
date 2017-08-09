@@ -1,4 +1,5 @@
 import * as WebRTCAdapter from "webrtc-adapter";
+import Call from './Call.js';
 
 var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
 
@@ -8,10 +9,8 @@ console.log("WebRTC : " + JSON.stringify(WebRTCAdapter.browserDetails));
 var STATUS_INIT =                 1;
 var STATUS_WSOPENED =             2;
 var STATUS_RECVD_PONG =           4;
-var STATUS_LOCALSTREAM_ATTACHED = 8;
-var STATUS_NOTREADY =             16;
-var STATUS_CANDIDATES_RECEIVED =  32;
-var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | ' + 'CLIENT' + ' |';
+var STATUS_NOTREADY =             8;
+var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT |';
 
 var CLIENT = function(configuration){
   let { type, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT } = configuration;
@@ -32,6 +31,7 @@ var CLIENT = function(configuration){
     this._onError("Wrong WebSocket URL, must start with wss://")
   }
 
+  this._callArray = [];
   this._type = type;
   this._status = status;
 
@@ -40,8 +40,6 @@ var CLIENT = function(configuration){
   this._websocket.onerror = handleWebSocketError.bind(this);
   this._websocket.onmessage = handleWebSocketMessage.bind(this);
   this._websocket.onclose = handleWebSocketClose.bind(this);
-
-  console.log("OK")
 }
 
 CLIENT.prototype.type = function() {
@@ -53,6 +51,16 @@ CLIENT.prototype.version = __VERSION__
 CLIENT.prototype.sendMessage = function(json){
   console.log(LOG_PREFIX, "handleWebSocketMessage | C->S :", json);
   this._websocket.send(json);
+}
+
+CLIENT.prototype.call = function(params, listeners){
+  try {
+    var callObj = new Call(this, params, listeners);
+    this._callArray.push(callObj);
+    return callObj;
+  } catch(error){
+    this._onError(error);
+  }
 }
 
 /**
@@ -90,12 +98,16 @@ const handleWebSocketMessage = function(event){
       switch (json.result.message) {
         case "pong":
         this._status *= STATUS_RECVD_PONG;
-        console.log("status = " + this._status);
+        this._onReady();
         return;
         default:
         break;
       }
     }
+  }
+
+  if (json.method && json.method === "answer" && json.params && json.params.sdp) {
+    this._callArray[0].setRemoteDescription(json.params.sdp);
   }
 }
 
