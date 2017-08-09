@@ -99,6 +99,8 @@ const handleWebSocketMessage = function(event){
   if (json.result) {
     // Process reponse after request from gateway
     if (json.result.message) {
+      let callID = null;
+      let index = -1;
       switch (json.result.message) {
         case "pong":
         this._status *= STATUS_RECVD_PONG;
@@ -106,15 +108,32 @@ const handleWebSocketMessage = function(event){
         return;
 
         case "CALL CREATED":
-        let callID = json.result.callID;
-        let index = this._callArray.findIndex(function(callObj){
+        console.log(LOG_PREFIX, "Got CALL CREATED event");
+        callID = json.result.callID;
+        index = this._callArray.findIndex(function(callObj){
           return callObj.callID === callID;
         });
         if (index < 0){
-          console.err(LOG_PREFIX, "Cannot find call with callID " + callID)
+          console.log(LOG_PREFIX, "Cannot find call with callID " + callID)
         } else {
           console.log(LOG_PREFIX, "Call created with callID " + callID);
         }
+        return;
+
+        case "CALL ENDED":
+        console.log(LOG_PREFIX, "Got CALL ENDED event");
+        callID = json.result.callID;
+        index = this._callArray.findIndex(function(callObj){
+          return callObj.callID === callID;
+        });
+        if (index < 0){
+          console.log(LOG_PREFIX, "Cannot find call with callID " + callID)
+        } else {
+          console.log(LOG_PREFIX, "Call ended with callID " + callID);
+        }
+        this._callArray[index]._onHangup();
+        this._callArray[index] = null;
+        this._callArray.splice(index, 1);
         return;
 
         default:

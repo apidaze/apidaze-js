@@ -29,7 +29,9 @@ var Call = function(clientObj, params, listeners){
     throw {ok: false, message: message}
   };
 
+  // Functions that can be called by dev
   this.sendDTMF = sendDTMF;
+  this.hangup = hangup;
 
   // Wise to call getUserMedia again
   let self = this;
@@ -56,6 +58,18 @@ function sendDTMF(digits){
     callID: this.callID,
     action: "sendDTMF",
     digits: digits
+  };
+
+  this.clientObj.sendMessage(JSON.stringify(request));
+}
+
+function hangup(){
+  console.log(LOG_PREFIX, "Hangup call with callID : " + this.callID);
+  var request = {};
+  request.wsp_version = "1";
+  request.method = "hangup";
+  request.params = {
+    callID: this.callID
   };
 
   this.clientObj.sendMessage(JSON.stringify(request));
