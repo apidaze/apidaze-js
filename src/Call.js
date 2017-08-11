@@ -5,7 +5,16 @@ var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin varia
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT | Call |' ;
 
 var Call = function(clientObj, params, listeners){
-  let { onError, onRinging, onAnswer, onHangup } = listeners;
+  var {
+    onError,
+    onRinging,
+    onAnswer,
+    onHangup,
+    onRoomMembersInitialList,
+    onRoomTalking,
+    onRoomAdd,
+    onRoomDel
+   } = listeners;
 
   this.clientObj = clientObj;
   this.setRemoteDescription = setRemoteDescription; // called from clientObj
@@ -21,10 +30,19 @@ var Call = function(clientObj, params, listeners){
   this.userRingingCallback = onRinging;
   this.userAnswerCallback = onAnswer;
   this.userHangupCallback = onHangup;
+  this.userRoomMembersInitialListCallback = onRoomMembersInitialList;
+  this.userRoomTalkingCallback = onRoomTalking;
+  this.userRoomDelCallback = onRoomDel;
+  this.userRoomAddCallback = onRoomAdd;
+
 
   this._onRinging = handleRinging;
   this._onAnswer = handleAnswer;
   this._onHangup = handleHangup;
+  this._onRoomMembersInitialList = handleMembersInitialList;
+  this._onRoomTalking = handleRoomTalking;
+  this._onRoomAdd = handleRoomAdd;
+  this._onRoomDel = handleRoomDel;
   this._onError = function(message){
     typeof onError === "function" ? onError(message) : console.log(LOG_PREFIX, "Error :", message);
     throw {ok: false, message: message}
@@ -85,6 +103,19 @@ function sendDTMF(digits){
 function hangup(){
   console.log(LOG_PREFIX, "Hangup call with callID : " + this.callID);
   var request = {};
+
+  // If this call is connected to a room, unsubscribe from events first
+  if (this.callType === "conference"){
+    request.wsp_version = "1";
+    request.method = "verto.unsubscribe";
+    request.id = "unsubscribe_message";
+    request.params = {
+      eventChannel: this.subscribedChannelsArray,
+      subParams: {}
+    };
+    this.clientObj.sendMessage(JSON.stringify(request));
+  }
+
   request.wsp_version = "1";
   request.method = "hangup";
   request.params = {
@@ -242,6 +273,53 @@ function handleHangup(){
   this.peerConnection = null;
   this.localAudioStream = null;
   typeof this.userHangupCallback === "function" && this.userHangupCallback();
+}
+
+function handleMembersInitialList(members){
+  console.log(LOG_PREFIX, "Initial list of members");
+  typeof this.userRoomMembersInitialListCallback === "function" && this.userRoomMembersInitialListCallback(members);
+}
+
+function handleRoomTalking(dataArray){
+  console.log(LOG_PREFIX, "Talk event : " + JSON.stringify(dataArray));
+  var status = JSON.parse(dataArray[4]);
+  var event = {
+    type: "room.talking",
+    conferenceMemberID: parseInt(dataArray[0]).toString(),
+    nickname: dataArray[2],
+    caller_id_number: dataArray[1],
+    talking: status.audio.talking,
+    muted: status.audio.muted,
+    energyScore: status.audio.energyScore.toString()
+  };
+
+  typeof this.userRoomTalkingCallback === "function" && this.userRoomTalkingCallback(event);
+}
+
+function handleRoomAdd(dataArray){
+  console.log(LOG_PREFIX, "Add event : " + JSON.stringify(dataArray));
+  var status = JSON.parse(dataArray[4]);
+  var event = {
+    type: "room.add",
+    conferenceMemberID: parseInt(dataArray[0]).toString(),
+    nickname: dataArray[2],
+    caller_id_number: dataArray[1]
+  };
+
+  typeof this.userRoomAddCallback === "function" && this.userRoomAddCallback(event);
+}
+
+function handleRoomDel(dataArray){
+  console.log(LOG_PREFIX, "Add event : " + JSON.stringify(dataArray));
+  var status = JSON.parse(dataArray[4]);
+  var event = {
+    type: "room.del",
+    conferenceMemberID: parseInt(dataArray[0]).toString(),
+    nickname: dataArray[2],
+    caller_id_number: dataArray[1]
+  };
+
+  typeof this.userRoomDelCallback === "function" && this.userRoomDelCallback(event);
 }
 
 function handleRinging(userCallback){
