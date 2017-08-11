@@ -316,7 +316,7 @@ const handleVertoEvent = function(event){
       this._onError("Failed to find call object that matches with conf event");
     }
 
-    switch(events.params.data.action){
+    switch(event.params.data.action){
       case "modify":
       // Who is talking events are received here
       this._callArray[index]._onRoomTalking(event.params.data.data);
