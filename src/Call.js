@@ -1,8 +1,10 @@
 import * as WebRTCAdapter from "webrtc-adapter";
+import Logger from './Logger.js';
 
 var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
 
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT | Call |' ;
+var LOGGER = new Logger(false, LOG_PREFIX);
 
 var Call = function(clientObj, params, listeners){
   var {
@@ -14,7 +16,11 @@ var Call = function(clientObj, params, listeners){
     onRoomTalking,
     onRoomAdd,
     onRoomDel
-   } = listeners;
+  } = listeners;
+
+  if (this.clientObj.debug){
+    LOGGER._debug = true;
+  }
 
   this.clientObj = clientObj;
   this.setRemoteDescription = setRemoteDescription; // called from clientObj
@@ -44,7 +50,7 @@ var Call = function(clientObj, params, listeners){
   this._onRoomAdd = handleRoomAdd;
   this._onRoomDel = handleRoomDel;
   this._onError = function(message){
-    typeof onError === "function" ? onError(message) : console.log(LOG_PREFIX, "Error :", message);
+    typeof onError === "function" ? onError(message) : LOGGER.log("Error : " + message);
     throw {ok: false, message: message}
   };
 
@@ -86,8 +92,8 @@ function startLocalAudio(){
 }
 
 function sendDTMF(digits){
-  console.log(LOG_PREFIX + "sendDTMF called, digits : " + digits);
-  console.log(LOG_PREFIX + "this.callID : " + this.callID);
+  LOGGER.log( "sendDTMF called, digits : " + digits);
+  LOGGER.log( "this.callID : " + this.callID);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
@@ -101,7 +107,7 @@ function sendDTMF(digits){
 }
 
 function hangup(){
-  console.log(LOG_PREFIX, "Hangup call with callID : " + this.callID);
+  LOGGER.log("Hangup call with callID : " + this.callID);
   var request = {};
 
   // If this call is connected to a room, unsubscribe from events first
@@ -155,8 +161,8 @@ function createOffer(){
     offerOptions
   ).then(
     function(desc){
-      console.log(LOG_PREFIX, "Local SDP : " + desc.sdp);
-      console.log(LOG_PREFIX, "Setting description to local peerConnection");
+      LOGGER.log("Local SDP : " + desc.sdp);
+      LOGGER.log("Setting description to local peerConnection");
       self.peerConnection.setLocalDescription(desc);
     },
     function(error){
@@ -175,7 +181,7 @@ function attachStreamToPeerConnection(){
       );
     }
   );
-  console.log(LOG_PREFIX, "Added local stream to peerConnection");
+  LOGGER.log("Added local stream to peerConnection");
 }
 
 /**
@@ -193,38 +199,38 @@ function createPeerConnection(){
   };
   var self = this;
 
-  console.log(LOG_PREFIX, "Creating RTCPeerConnection...")
+  LOGGER.log("Creating RTCPeerConnection...")
   this.peerConnection = new RTCPeerConnection(pc_config, pc_constraints);
   this.peerConnection.ontrack = function(event){
-    console.log(LOG_PREFIX, "Received remote stream");
+    LOGGER.log("Received remote stream");
     if (self.remoteAudio.srcObject !== event.streams[0]) {
       self.remoteAudio.srcObject = event.streams[0];
     }
   }
   this.peerConnection.onicecandidate = function(event){
     if (event.candidate){
-      console.log(LOG_PREFIX, "ICE candidate received: " + event.candidate.candidate);
+      LOGGER.log("ICE candidate received: " + event.candidate.candidate);
     } else if (!('onicegatheringstatechange' in RTCPeerConnection.prototype)) {
       // should not be done if its done in the icegatheringstatechange callback.
-      console.log(LOG_PREFIX, "Got ICE candidates, start call...");
+      LOGGER.log("Got ICE candidates, start call...");
       startCall.call(self);
     }
   }
   this.peerConnection.oniceconnectionstatechange = function(event){
     if (self.peerConnection === null){
-      console.log(LOG_PREFIX, "peerConnection is null, call has been hungup ?");
+      LOGGER.log("peerConnection is null, call has been hungup ?");
       return;
     }
 
-    console.log(LOG_PREFIX, "ICE State : " + self.peerConnection.iceConnectionState);
-    console.log(LOG_PREFIX, "ICE State : " + self.peerConnection.iceConnectionState);
-    console.log(LOG_PREFIX, "ICE state change event: ", event);
+    LOGGER.log("ICE State : " + self.peerConnection.iceConnectionState);
+    LOGGER.log("ICE State : " + self.peerConnection.iceConnectionState);
+    LOGGER.log("ICE state change event: " + event);
   }
   this.peerConnection.onicegatheringstatechange = function(){
     if (self.peerConnection.iceGatheringState !== 'complete') {
       return;
     }
-    console.log(LOG_PREFIX, "Got ICE candidates (from onicegatheringstatechange), start call...");
+    LOGGER.log("Got ICE candidates (from onicegatheringstatechange), start call...");
     startCall.call(self);
   }
 }
@@ -259,7 +265,7 @@ function startCall(){
 * Handle Hangup event received fro FreeSWITCH
 */
 function handleHangup(){
-  console.log(LOG_PREFIX, "Call hungup");
+  LOGGER.log("Call hungup");
   let self = this;
 
   this.localAudioStream.getTracks().forEach(
@@ -276,12 +282,12 @@ function handleHangup(){
 }
 
 function handleMembersInitialList(members){
-  console.log(LOG_PREFIX, "Initial list of members");
+  LOGGER.log("Initial list of members");
   typeof this.userRoomMembersInitialListCallback === "function" && this.userRoomMembersInitialListCallback(members);
 }
 
 function handleRoomTalking(dataArray){
-  console.log(LOG_PREFIX, "Talk event : " + JSON.stringify(dataArray));
+  LOGGER.log("Talk event : " + JSON.stringify(dataArray));
   var status = JSON.parse(dataArray[4]);
   var event = {
     type: "room.talking",
@@ -297,7 +303,7 @@ function handleRoomTalking(dataArray){
 }
 
 function handleRoomAdd(dataArray){
-  console.log(LOG_PREFIX, "Add event : " + JSON.stringify(dataArray));
+  LOGGER.log("Add event : " + JSON.stringify(dataArray));
   var status = JSON.parse(dataArray[4]);
   var event = {
     type: "room.add",
@@ -310,7 +316,7 @@ function handleRoomAdd(dataArray){
 }
 
 function handleRoomDel(dataArray){
-  console.log(LOG_PREFIX, "Add event : " + JSON.stringify(dataArray));
+  LOGGER.log("Add event : " + JSON.stringify(dataArray));
   var status = JSON.parse(dataArray[4]);
   var event = {
     type: "room.del",
@@ -323,17 +329,17 @@ function handleRoomDel(dataArray){
 }
 
 function handleRinging(userCallback){
- console.log(LOG_PREFIX, "Ringing");
+ LOGGER.log("Ringing");
  typeof userCallback === "function" && userCallback();
 }
 
 function handleAnswer(userCallback){
-  console.log(LOG_PREFIX, "Answer");
+  LOGGER.log("Answer");
   typeof userCallback === "function" && userCallback();
 }
 
 function handleGUMSuccess(stream){
-  console.log(LOG_PREFIX, "WebRTC Ok");
+  LOGGER.log("WebRTC Ok");
   this.localAudioStream = stream;
 }
 

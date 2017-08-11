@@ -1,4 +1,5 @@
 import Call from './Call.js';
+import Logger from './Logger.js';
 
 var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
 
@@ -7,17 +8,25 @@ var STATUS_WSOPENED =             2;
 var STATUS_RECVD_PONG =           4;
 var STATUS_NOTREADY =             8;
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT |';
+var LOGGER = new Logger(false, LOG_PREFIX);
 
 var CLIENT = function(configuration){
-  let { apiKey, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT } = configuration;
+  let { apiKey, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT, debug } = configuration;
 
   // User defined handlers
-  this._onDisconnected = onDisconnected || function(){ console.log(LOG_PREFIX, "Disconnected") };
-  this._onReady = onReady || function(){ console.log(LOG_PREFIX, "Ready") };
+  this._onDisconnected = onDisconnected || function(){ LOGGER.log("Disconnected") };
+  this._onReady = onReady || function(){ LOGGER.log("Ready") };
   this._onError = function(message){
-    typeof onError === "function" ? onError(message) : console.log(LOG_PREFIX, "Error :", message);
+    typeof onError === "function" ? onError(message) : LOGGER.log("Error : " + message);
     throw {ok: false, message: message}
   };
+
+  if (debug) {
+    this.debug = true;
+    LOGGER._debug = true;
+  } else {
+    this.debug = false;
+  }
 
   if (!apiKey){
     this._onError("Please provide apiKey")
@@ -49,7 +58,7 @@ CLIENT.prototype.type = function() {
 CLIENT.prototype.version = __VERSION__
 
 CLIENT.prototype.sendMessage = function(json){
-  console.log(LOG_PREFIX, "handleWebSocketMessage | C->S :", json);
+  LOGGER.log("handleWebSocketMessage | C->S : " + json);
   this._websocket.send(json);
 }
 
@@ -67,7 +76,7 @@ CLIENT.prototype.call = function(params, listeners){
 * Log connection event and update status
 */
 const handleWebSocketOpen = function(){
-  console.log(LOG_PREFIX, "handleWebSocketOpen |", "WebSocket opened");
+  LOGGER.log("handleWebSocketOpen | WebSocket opened");
   this._status *= STATUS_WSOPENED;
 
   var request = {};
@@ -81,7 +90,7 @@ const handleWebSocketOpen = function(){
 * Call CLIENT.onError() and throw error
 */
 const handleWebSocketError = function(){
-  console.log(LOG_PREFIX, "handleWebSocketError |", "Error ");
+  LOGGER.log("handleWebSocketError | Error ");
   this._onError("WebSocket error");
 }
 
@@ -89,7 +98,7 @@ const handleWebSocketError = function(){
 * Handle messages from mod_verto
 */
 const handleWebSocketMessage = function(event){
-  console.log(LOG_PREFIX, "handleWebSocketMessage | S->C :", event.data);
+  LOGGER.log("handleWebSocketMessage | S->C : " + event.data);
   let json = JSON.parse(event.data);
 
   // Handle response to our initial 'subscribe_message' request
@@ -119,31 +128,30 @@ const handleWebSocketMessage = function(event){
         return;
 
         case "CALL CREATED":
-        console.log(LOG_PREFIX, "Got CALL CREATED event");
+        LOGGER.log("Got CALL CREATED event");
         callID = json.result.callID;
         sessid = json.result.sessid;
         index = this._callArray.findIndex(function(callObj){
           return callObj.callID === callID;
         });
         if (index < 0){
-          console.log(LOG_PREFIX, "Cannot find call with callID " + callID);
+          LOGGER.log("Cannot find call with callID " + callID);
         } else {
-          console.log(LOG_PREFIX,
-            "Call created with callID " + callID + " and sessid " + sessid);
-            this._callArray[index].sessid = sessid;
+          LOGGER.log("Call created with callID " + callID + " and sessid " + sessid);
+          this._callArray[index].sessid = sessid;
         }
         return;
 
         case "CALL ENDED":
-        console.log(LOG_PREFIX, "Got CALL ENDED event");
+        LOGGER.log("Got CALL ENDED event");
         callID = json.result.callID;
         index = this._callArray.findIndex(function(callObj){
           return callObj.callID === callID;
         });
         if (index < 0){
-          console.log(LOG_PREFIX, "Cannot find call with callID " + callID)
+          LOGGER.log("Cannot find call with callID " + callID)
         } else {
-          console.log(LOG_PREFIX, "Call ended with callID " + callID);
+          LOGGER.log("Call ended with callID " + callID);
         }
         this._callArray[index]._onHangup();
         this._callArray[index] = null;
@@ -158,7 +166,7 @@ const handleWebSocketMessage = function(event){
     if (json.result.action) {
       switch(json.result.action){
         case "sendDTMF":
-        console.log(LOG_PREFIX, "DTMF sent");
+        LOGGER.log("DTMF sent");
         return;
         default:
         return;
@@ -177,7 +185,7 @@ const handleWebSocketMessage = function(event){
   });
 
   if (index < 0){
-    console.log(LOG_PREFIX, "Cannot find call with callID " + callID)
+    LOGGER.log("Cannot find call with callID " + callID)
   }
 
   /**
@@ -192,7 +200,7 @@ const handleWebSocketMessage = function(event){
   switch(json.method){
     case "media":
     // In this case, we consider the call is ringing
-    console.log(LOG_PREFIX, "Found call index : " + index);
+    LOGGER.log("Found call index : " + index);
     if (json.params.sdp){
       this._callArray[index].setRemoteDescription(json.params.sdp);
     }
@@ -200,7 +208,7 @@ const handleWebSocketMessage = function(event){
 
     break;
     case "answer":
-    console.log(LOG_PREFIX, "Found call index : " + index);
+    LOGGER.log("Found call index : " + index);
     if (json.params.sdp){
       this._callArray[index].setRemoteDescription(json.params.sdp);
     }
@@ -208,14 +216,14 @@ const handleWebSocketMessage = function(event){
 
     break;
     case "hangup":
-    console.log(LOG_PREFIX, "Hangup call with callID " + this._callArray[index].callID);
+    LOGGER.log("Hangup call with callID " + this._callArray[index].callID);
     this._callArray[index]._onHangup();
     this._callArray[index] = null;
     this._callArray.splice(index, 1);
 
     break;
     case "ringing":
-    console.log(LOG_PREFIX, "Ringing on call with callID " + this._callArray[index].callID);
+    LOGGER.log("Ringing on call with callID " + this._callArray[index].callID);
     // FS may send SDP along with ringing event
     if (json.params.sdp){
       this._callArray[index].setRemoteDescription(json.params.sdp);
@@ -224,7 +232,7 @@ const handleWebSocketMessage = function(event){
 
     break;
     default:
-    console.log(LOG_PREFIX, "No action for this message");
+    LOGGER.log("No action for this message");
   }
 }
 
@@ -236,15 +244,15 @@ const handleWebSocketMessage = function(event){
 */
 const handleVertoEvent = function(event){
   var params = event.params;
-  console.log(LOG_PREFIX, "Received event of type " + params.eventType);
-  console.log(LOG_PREFIX, "Event channel UUID : " + params.eventChannelUUID);
+  LOGGER.log("Received event of type " + params.eventType);
+  LOGGER.log("Event channel UUID : " + params.eventChannelUUID);
   var index = this._callArray.findIndex(function(callObj){
     return callObj.callID === params.eventChannelUUID;
   });
 
   if (index >= 0){
     // This is an event generated by one of our sessions (not a conference)
-    console.log(LOG_PREFIX, "Need to handle simple event");
+    LOGGER.log("Need to handle simple event");
     if (params.pvtData.action === "conference-liveArray-join"){
       /**
       * We receive this message the first time we join the conference.
@@ -334,7 +342,7 @@ const handleSubscribeFromVerto = function(event, callID){
   });
 
   if (index < 0){
-    console.log(LOG_PREFIX, "Cannot find a call object that matches with sessid ", event.sessid);
+    LOGGER.log("Cannot find a call object that matches with sessid " + event.sessid);
     throw {ok: false, message: "Failed to process reply to subscribe"}
   }
 
@@ -362,11 +370,11 @@ const handleConferenceListResponse = function(event, callID){
   });
 
   if (index < 0){
-    console.log(LOG_PREFIX, "Cannot find a call object that matches with sessid ", event.sessid);
+    LOGGER.log("Cannot find a call object that matches with sessid " + event.sessid);
     throw {ok: false, message: "Failed to process reply to conference_list_command"}
   }
 
-  console.log(LOG_PREFIX, "Got members", JSON.stringify(event));
+  LOGGER.log("Got members " + JSON.stringify(event));
   var members = [];
   var lines = event.result.message.split('\n');
   for (var idx = 0; idx < lines.length - 1; idx++) {
@@ -387,7 +395,7 @@ const handleConferenceListResponse = function(event, callID){
 * Log connection event, update status, call CLIENT.onDisconnected()
 */
 const handleWebSocketClose = function(err){
-  console.log(LOG_PREFIX, "handleWebSocketClose |", "WebSocket closed");
+  LOGGER.log("handleWebSocketClose | WebSocket closed");
   this._status = STATUS_INIT;
   this._onDisconnected();
 }
