@@ -9,9 +9,10 @@ var Call = function(clientObj, params, listeners){
 
   this.clientObj = clientObj;
   this.setRemoteDescription = setRemoteDescription; // called from clientObj
-  this.remoteAudio = document.createElement("audio");
+  this.remoteAudio = document.createElement("video");
   this.remoteAudio.autoplay = "autoplay";
   this.remoteAudio.controls = "controls";
+  document.body.appendChild(this.remoteAudio)
   this.localAudioStream = null;
   this.peerConnection = null;
   this.callID = null;
@@ -37,7 +38,7 @@ var Call = function(clientObj, params, listeners){
 
   // Wise to call getUserMedia again
   let self = this;
-  navigator.mediaDevices.getUserMedia({audio: true, video: false})
+  navigator.mediaDevices.getUserMedia({audio: true, video: true})
     .then(function(stream){
       handleGUMSuccess.call(self, stream);
       createPeerConnection.call(self);
@@ -114,7 +115,7 @@ function setRemoteDescription(sdp){
 function createOffer(){
   var offerOptions = {
     offerToReceiveAudio: 1,
-    offerToReceiveVideo: 0
+    offerToReceiveVideo: 1
   };
 
   var self = this;
@@ -157,7 +158,7 @@ function createPeerConnection(){
   var pc_config = {"iceServers": []};
   var pc_constraints = {
     "optional": [{"DtlsSrtpKeyAgreement": true}, {"googIPv6": false}],
-    "mandatory":  { 'OfferToReceiveAudio':true,  'OfferToReceiveVideo':false}
+    "mandatory":  { 'OfferToReceiveAudio':true,  'OfferToReceiveVideo':true}
   };
   var self = this;
 

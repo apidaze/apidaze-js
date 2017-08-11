@@ -154,7 +154,7 @@ const handleWebSocketMessage = function(event){
   });
 
   if (index < 0){
-    console.err(LOG_PREFIX, "Cannot find call with callID " + callID)
+    console.log(LOG_PREFIX, "Cannot find call with callID " + callID)
   }
 
   /**
@@ -200,6 +200,8 @@ const handleWebSocketMessage = function(event){
     this._callArray[index]._onRinging();
 
     break;
+    default:
+    console.log(LOG_PREFIX, "No action for this message");
   }
 }
 
