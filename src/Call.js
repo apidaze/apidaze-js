@@ -18,7 +18,7 @@ var Call = function(clientObj, params, listeners){
     onRoomDel
   } = listeners;
 
-  if (this.clientObj.debug){
+  if (clientObj.debug){
     LOGGER._debug = true;
   }
 
@@ -57,6 +57,7 @@ var Call = function(clientObj, params, listeners){
   // Functions that can be called by dev
   this.sendDTMF = sendDTMF;
   this.hangup = hangup;
+  this.sendText = sendText;
   this.stopLocalAudio = stopLocalAudio;
   this.startLocalAudio = startLocalAudio;
 
@@ -129,6 +130,27 @@ function hangup(){
   };
 
   this.clientObj.sendMessage(JSON.stringify(request));
+}
+
+function sendText(message){
+  LOGGER.log("Sending text : " + message);
+  var request = {};
+
+  // If this call is connected to a room, unsubscribe from events first
+  if (this.callType === "conference"){
+    request.wsp_version = "1";
+    request.method = "verto.broadcast";
+    request.params = {
+      eventChannel: this.subscribedChannels.chatChannel,
+      data: {
+        action: "send",
+        message: message,
+        from : this.conferenceMemberID,
+        type: "text"
+      }
+    };
+    this.clientObj.sendMessage(JSON.stringify(request));
+  }
 }
 
 function setRemoteDescription(sdp){
