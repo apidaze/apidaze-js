@@ -51,13 +51,9 @@ var CLIENT = function(configuration){
   this._websocket.onclose = handleWebSocketClose.bind(this);
 }
 
-CLIENT.prototype.type = function() {
-  return this._type;
-}
-
 CLIENT.prototype.version = __VERSION__
 
-CLIENT.prototype.sendMessage = function(json){
+CLIENT.prototype._sendMessage = function(json){
   LOGGER.log("handleWebSocketMessage | C->S : " + json);
   this._websocket.send(json);
 }
@@ -83,7 +79,7 @@ const handleWebSocketOpen = function(){
   request.wsp_version = "1";
   request.method = "ping";
   request.params = {};
-  this.sendMessage(JSON.stringify(request));
+  this._sendMessage(JSON.stringify(request));
 }
 
 /**
@@ -273,7 +269,7 @@ const handleVertoEvent = function(event){
         ],
         subParams: {}
       };
-      this.sendMessage(JSON.stringify(request));
+      this._sendMessage(JSON.stringify(request));
 
       request.wsp_version = "1";
       request.method = "jsapi";
@@ -285,7 +281,7 @@ const handleVertoEvent = function(event){
           arg: event.params.pvtData.laName + " list"
         }
       };
-      this.sendMessage(JSON.stringify(request));
+      this._sendMessage(JSON.stringify(request));
 
       /**
       * Set parameters to our callObj

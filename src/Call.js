@@ -104,7 +104,7 @@ function sendDTMF(digits){
     digits: digits
   };
 
-  this.clientObj.sendMessage(JSON.stringify(request));
+  this.clientObj._sendMessage(JSON.stringify(request));
 }
 
 function hangup(){
@@ -120,7 +120,7 @@ function hangup(){
       eventChannel: this.subscribedChannelsArray,
       subParams: {}
     };
-    this.clientObj.sendMessage(JSON.stringify(request));
+    this.clientObj._sendMessage(JSON.stringify(request));
   }
 
   request.wsp_version = "1";
@@ -129,7 +129,7 @@ function hangup(){
     callID: this.callID
   };
 
-  this.clientObj.sendMessage(JSON.stringify(request));
+  this.clientObj._sendMessage(JSON.stringify(request));
 }
 
 function sendText(message){
@@ -149,7 +149,7 @@ function sendText(message){
         type: "text"
       }
     };
-    this.clientObj.sendMessage(JSON.stringify(request));
+    this.clientObj._sendMessage(JSON.stringify(request));
   }
 }
 
@@ -280,7 +280,7 @@ function startCall(){
   };
   request.params.sdp = this.peerConnection.localDescription.sdp;
   this.callID = callID;
-  this.clientObj.sendMessage(JSON.stringify(request));
+  this.clientObj._sendMessage(JSON.stringify(request));
 }
 
 /**
