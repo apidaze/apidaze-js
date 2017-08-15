@@ -157,7 +157,6 @@ const handleWebSocketMessage = function(event){
       switch (json.result.message) {
         case "pong":
         this._status *= STATUS_RECVD_PONG;
-        this._onReady();
         return;
 
         case "CALL CREATED":
@@ -210,6 +209,10 @@ const handleWebSocketMessage = function(event){
   if (json.method === "event"){
     handleVertoEvent.call(this, json);
     return;
+  }
+
+  if (json.method === "clientReady"){
+    this._onReady()
   }
 
   let callID = json.params.callID;
