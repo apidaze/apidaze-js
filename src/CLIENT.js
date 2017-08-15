@@ -1,4 +1,5 @@
 import Call from './Call.js';
+import Utils from './Utils.js';
 import Logger from './Logger.js';
 
 var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
@@ -11,7 +12,18 @@ var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT |';
 var LOGGER = new Logger(false, LOG_PREFIX);
 
 var CLIENT = function(configuration){
-  let { apiKey, wsurl, onReady, onDisconnected, onError, status = STATUS_INIT, debug } = configuration;
+  let {
+    apiKey,
+    wsurl,
+    onReady,
+    onDisconnected,
+    onError,
+    status = STATUS_INIT,
+    debug
+  } = configuration;
+
+  this.speedTest = speedTest.bind(this);
+  this.ping = ping.bind(this);
 
   // User defined handlers
   this._onDisconnected = onDisconnected || function(){ LOGGER.log("Disconnected") };
@@ -95,7 +107,32 @@ const handleWebSocketError = function(){
 */
 const handleWebSocketMessage = function(event){
   LOGGER.log("handleWebSocketMessage | S->C : " + event.data);
-  let json = JSON.parse(event.data);
+
+  // Special sub proto
+  if (event.data[0] == "#" && event.data[1] == "S" && event.data[2] == "P") {
+      if (event.data[3] == "U") {
+          this.up_dur = parseInt(event.data.substring(4));
+      } else if (this._speedCB && event.data[3] == "D") {
+          this.down_dur = parseInt(event.data.substring(4));
+
+          var up_kps = (((this._speedBytes * 8) / (this.up_dur / 1000)) / 1024).toFixed(0);
+          var down_kps = (((this._speedBytes * 8) / (this.down_dur / 1000)) / 1024).toFixed(0);
+
+          console.info("Speed Test: Up: " + up_kps + "kbit/s Down: " + down_kps + "kbits/s");
+          this._speedCB(event, { upDur: this.up_dur, downDur: this.down_dur, upKPS: up_kps, downKPS: down_kps });
+          this._speedCB = null;
+      }
+
+      return;
+  }
+
+  var json = JSON.parse(event.data);
+
+  // Handle echo reply to our echo request
+  if (json.result && json.result.type === "echo_request"){
+    handleEchoReply.call(this, json);
+    return;
+  }
 
   // Handle response to our initial 'subscribe_message' request
   if (/^subscribe_message/.test(json.id)){
@@ -394,6 +431,56 @@ const handleWebSocketClose = function(err){
   LOGGER.log("handleWebSocketClose | WebSocket closed");
   this._status = STATUS_INIT;
   this._onDisconnected();
+}
+
+const handleEchoReply = function(event) {
+  var now = Date.now();
+  var rtt = now - parseInt(event.result.time);
+  LOGGER.log("handleEchoReply RTT : " + rtt + "ms");
+
+  if (typeof this._pingCallback === "function") {
+    this._pingCallback(rtt);
+    this._pingCallback = null;
+  }
+}
+
+const speedTest = function (bytes, userCallback) {
+  var socket = this._websocket;
+  if (socket !== null) {
+    this._speedCB = userCallback;
+    this._speedBytes = bytes;
+    socket.send("#SPU " + bytes);
+
+    var loops = bytes / 1024;
+    var rem = bytes % 1024;
+    var i;
+    var data = new Array(1024).join(".");
+    for (i = 0; i < loops; i++) {
+      socket.send("#SPB " + data);
+    }
+
+    if (rem) {
+      socket.send("#SPB " + data);
+    }
+
+    socket.send("#SPE");
+  }
+}
+
+const ping = function(userCallback) {
+  var now = Date.now();
+  var request = {};
+
+  this._pingCallback = userCallback;
+
+  request.wsp_version = "1";
+  request.method = "echo";
+  request.params = {
+    type: "echo_request",
+    time: now
+  };
+
+  this._sendMessage(JSON.stringify(request));
 }
 
 export default CLIENT
