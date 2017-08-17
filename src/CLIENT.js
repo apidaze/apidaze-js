@@ -5,9 +5,7 @@ import Logger from './Logger.js';
 var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
 
 var STATUS_INIT =                 1;
-var STATUS_WSOPENED =             2;
-var STATUS_RECVD_PONG =           4;
-var STATUS_NOTREADY =             8;
+var STATUS_READY =                2;
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT |';
 var LOGGER = new Logger(false, LOG_PREFIX);
 
@@ -18,7 +16,6 @@ var CLIENT = function(configuration){
     onReady,
     onDisconnected,
     onError,
-    status = STATUS_INIT,
     debug
   } = configuration;
 
@@ -26,8 +23,15 @@ var CLIENT = function(configuration){
   this.ping = ping.bind(this);
 
   // User defined handlers
-  this._onDisconnected = onDisconnected || function(){ LOGGER.log("Disconnected") };
-  this._onReady = onReady || function(){ LOGGER.log("Ready") };
+  this._onDisconnected = function(){
+    typeof onDisconnected === "function" && onDisconnected();
+    LOGGER.log("Disconnected")
+  };
+  this._onReady = function(){
+    this._status += STATUS_READY;
+    LOGGER.log("Ready");
+    typeof onReady === "function" && onReady();
+  };
   this._onError = function(message){
     typeof onError === "function" ? onError(message) : LOGGER.log("Error : " + message);
     throw {ok: false, message: message}
@@ -54,7 +58,7 @@ var CLIENT = function(configuration){
 
   this._callArray = [];
   this._apiKey = apiKey;
-  this._status = status;
+  this._status = STATUS_INIT;
 
   this._websocket = new WebSocket(wsurl);
   this._websocket.onopen = handleWebSocketOpen.bind(this);
@@ -66,6 +70,17 @@ var CLIENT = function(configuration){
 CLIENT.prototype.version = __VERSION__
 
 CLIENT.prototype._sendMessage = function(json){
+
+  if (this._websocket.readyState !== this._websocket.OPEN){
+    this._onError("Client is not ready (WebSocket not open)");
+    return;
+  }
+
+  if ((this._status & STATUS_READY) === 0 && JSON.parse(json).method !== "ping"){
+    this._onError("Client is not ready (hello not received from server)");
+    return;
+  }
+
   LOGGER.log("handleWebSocketMessage | C->S : " + json);
   this._websocket.send(json);
 }
@@ -85,7 +100,6 @@ CLIENT.prototype.call = function(params, listeners){
 */
 const handleWebSocketOpen = function(){
   LOGGER.log("handleWebSocketOpen | WebSocket opened");
-  this._status *= STATUS_WSOPENED;
 
   var request = {};
   request.wsp_version = "1";
@@ -156,7 +170,7 @@ const handleWebSocketMessage = function(event){
       let index = -1;
       switch (json.result.message) {
         case "pong":
-        this._status *= STATUS_RECVD_PONG;
+//        this._status *= STATUS_RECVD_PONG;
         return;
 
         case "CALL CREATED":
