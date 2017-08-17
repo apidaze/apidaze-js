@@ -226,7 +226,8 @@ const handleWebSocketMessage = function(event){
   }
 
   if (json.method === "clientReady"){
-    this._onReady()
+    this._onReady();
+    return;
   }
 
   let callID = json.params.callID;
