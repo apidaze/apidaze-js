@@ -143,11 +143,10 @@ function sendText(message){
     request.method = "verto.broadcast";
     request.params = {
       eventChannel: this.subscribedChannels.chatChannel,
+      fromID : this.conferenceMemberID.toString(),
       data: {
         action: "send",
-        message: message,
-        from : this.conferenceMemberID,
-        type: "text"
+        message: message
       }
     };
     this.clientObj._sendMessage(JSON.stringify(request));
