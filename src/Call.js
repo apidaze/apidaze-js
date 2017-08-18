@@ -10,7 +10,9 @@ var LOGGER = new Logger(false, LOG_PREFIX);
 var Call = function(clientObj, params, listeners){
   var {
     activateAudio = true,
-    activateVideo = false
+    activateVideo = false,
+    videoParams,
+    audioParams
   } = params;
 
   var {
@@ -36,7 +38,7 @@ var Call = function(clientObj, params, listeners){
   this.remoteAudioVideo.autoplay = "autoplay";
   this.remoteAudioVideo.controls = "controls";
   document.body.appendChild(this.remoteAudioVideo)
-  this.localAudioStream = null;
+  this.localAudioVideoStream = null;
   this.peerConnection = null;
   this.callID = null;
 
@@ -87,7 +89,7 @@ var Call = function(clientObj, params, listeners){
 }
 
 function stopLocalAudio(){
-  this.localAudioStream.getAudioTracks().forEach(
+  this.localAudioVideoStream.getAudioTracks().forEach(
     function(track) {
       track.enabled = false;
     }
@@ -95,7 +97,7 @@ function stopLocalAudio(){
 }
 
 function startLocalAudio(){
-  this.localAudioStream.getAudioTracks().forEach(
+  this.localAudioVideoStream.getAudioTracks().forEach(
     function(track) {
       track.enabled = true;
     }
@@ -204,11 +206,11 @@ function createOffer(){
 
 function attachStreamToPeerConnection(){
   let self = this;
-  this.localAudioStream.getTracks().forEach(
+  this.localAudioVideoStream.getTracks().forEach(
     function(track) {
       self.peerConnection.addTrack(
         track,
-        self.localAudioStream
+        self.localAudioVideoStream
       );
     }
   );
@@ -295,7 +297,7 @@ function handleHangup(){
   LOGGER.log("Call hungup");
   let self = this;
 
-  this.localAudioStream.getTracks().forEach(
+  this.localAudioVideoStream.getTracks().forEach(
     function(track) {
       track.stop();
     }
@@ -304,7 +306,7 @@ function handleHangup(){
   this.peerConnection.close();
   this.remoteAudioVideo = null;
   this.peerConnection = null;
-  this.localAudioStream = null;
+  this.localAudioVideoStream = null;
   typeof this.userHangupCallback === "function" && this.userHangupCallback();
 }
 
@@ -367,7 +369,7 @@ function handleAnswer(userCallback){
 
 function handleGUMSuccess(stream){
   LOGGER.log("WebRTC Ok");
-  this.localAudioStream = stream;
+  this.localAudioVideoStream = stream;
 }
 
 function handleGUMError(error){
