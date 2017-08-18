@@ -9,6 +9,11 @@ var LOGGER = new Logger(false, LOG_PREFIX);
 
 var Call = function(clientObj, params, listeners){
   var {
+    activateAudio = true,
+    activateVideo = false
+  } = params;
+
+  var {
     onError,
     onRinging,
     onAnswer,
@@ -25,10 +30,12 @@ var Call = function(clientObj, params, listeners){
 
   this.clientObj = clientObj;
   this.setRemoteDescription = setRemoteDescription; // called from clientObj
-  this.remoteAudio = document.createElement("video");
-  this.remoteAudio.autoplay = "autoplay";
-  this.remoteAudio.controls = "controls";
-  document.body.appendChild(this.remoteAudio)
+  this.activateVideo = activateVideo;
+  this.activateAudio = activateAudio;
+  this.remoteAudioVideo = document.createElement("video");
+  this.remoteAudioVideo.autoplay = "autoplay";
+  this.remoteAudioVideo.controls = "controls";
+  document.body.appendChild(this.remoteAudioVideo)
   this.localAudioStream = null;
   this.peerConnection = null;
   this.callID = null;
@@ -64,8 +71,10 @@ var Call = function(clientObj, params, listeners){
 
   // Wise to call getUserMedia again
   let self = this;
-  navigator.mediaDevices.getUserMedia({audio: true, video: true})
-    .then(function(stream){
+  navigator.mediaDevices.getUserMedia({
+    audio: self.activateAudio,
+    video: self.activateVideo
+  }).then(function(stream){
       handleGUMSuccess.call(self, stream);
       createPeerConnection.call(self);
       attachStreamToPeerConnection.call(self);
@@ -216,8 +225,14 @@ function attachStreamToPeerConnection(){
 function createPeerConnection(){
   var pc_config = {"iceServers": []};
   var pc_constraints = {
-    "optional": [{"DtlsSrtpKeyAgreement": true}, {"googIPv6": false}],
-    "mandatory":  { 'OfferToReceiveAudio':true,  'OfferToReceiveVideo':true}
+    "optional": [
+      {"DtlsSrtpKeyAgreement": true},
+      {"googIPv6": false}
+    ],
+    "mandatory": {
+      'OfferToReceiveAudio': this.activateAudio,
+      'OfferToReceiveVideo': this.activateVideo
+    }
   };
   var self = this;
 
@@ -225,8 +240,8 @@ function createPeerConnection(){
   this.peerConnection = new RTCPeerConnection(pc_config, pc_constraints);
   this.peerConnection.ontrack = function(event){
     LOGGER.log("Received remote stream");
-    if (self.remoteAudio.srcObject !== event.streams[0]) {
-      self.remoteAudio.srcObject = event.streams[0];
+    if (self.remoteAudioVideo.srcObject !== event.streams[0]) {
+      self.remoteAudioVideo.srcObject = event.streams[0];
     }
   }
   this.peerConnection.onicecandidate = function(event){
@@ -287,7 +302,7 @@ function handleHangup(){
   );
 
   this.peerConnection.close();
-  this.remoteAudio = null;
+  this.remoteAudioVideo = null;
   this.peerConnection = null;
   this.localAudioStream = null;
   typeof this.userHangupCallback === "function" && this.userHangupCallback();
