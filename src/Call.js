@@ -7,12 +7,30 @@ var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin varia
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT | Call |' ;
 var LOGGER = new Logger(false, LOG_PREFIX);
 
-var Call = function(clientObj, params, listeners){
+/**
+* The callID parameter is expected to be null, except when clientObj is
+* re-attaching to an existing call in FreeSWITCH
+*/
+var Call = function(clientObj, callID, params, listeners){
+  /**
+  * videoParams example :
+  *
+  *  minWidth: 320,
+  *  minHeight: 240,
+  *  maxWidth: 640,
+  *  maxHeight: 480,
+  *  // The minimum frame rate of the client camera, Verto will fail if it's
+  *  // less than this.
+  *  minFrameRate: 15,
+  *  // The maximum frame rate to send from the camera.
+  *  bestFrameRate: 30,
+  */
+
   var {
     activateAudio = true,
     activateVideo = false,
-    videoParams,
-    audioParams
+    videoParams = {},
+    audioParams = {}
   } = params;
 
   var {
@@ -34,13 +52,18 @@ var Call = function(clientObj, params, listeners){
   this.setRemoteDescription = setRemoteDescription; // called from clientObj
   this.activateVideo = activateVideo;
   this.activateAudio = activateAudio;
+  this.videoParams = videoParams;
+  this.audioParams = audioParams;
+
   this.remoteAudioVideo = document.createElement("video");
   this.remoteAudioVideo.autoplay = "autoplay";
   this.remoteAudioVideo.controls = "controls";
-  document.body.appendChild(this.remoteAudioVideo)
+  document.body.appendChild(this.remoteAudioVideo);
+
   this.localAudioVideoStream = null;
   this.peerConnection = null;
-  this.callID = null;
+  this.callID = callID;
+  this.reattach = callID === null ? false : true;
 
   this.userParams = params;
   this.userRingingCallback = onRinging;
@@ -71,17 +94,45 @@ var Call = function(clientObj, params, listeners){
   this.stopLocalAudio = stopLocalAudio;
   this.startLocalAudio = startLocalAudio;
 
-  // Wise to call getUserMedia again
+  var GUMConstraints = {
+    audio: this.activateAudio
+  };
+
+  if (this.activateVideo === false) {
+    GUMConstraints.video = false;
+  } else {
+    LOGGER.log("Need to set GUMConstraints.video");
+    GUMConstraints.video = {
+      width: {
+        min: this.videoParams.minWidth || 320,
+        max: this.videoParams.maxWidth || 640,
+      },
+      height: {
+        min: this.videoParams.minHeight || 240,
+        max: this.videoParams.maxHeight || 480
+      },
+      frameRate: {
+        min: 15,
+        ideal: this.videoParams.bestFrameRate || 30,
+        max: 30
+      }
+    }
+  }
+
+  LOGGER.log("GUM constraints : " + JSON.stringify(GUMConstraints));
+
   let self = this;
-  navigator.mediaDevices.getUserMedia({
-    audio: self.activateAudio,
-    video: self.activateVideo
-  }).then(function(stream){
+  navigator.mediaDevices.getUserMedia(GUMConstraints).then(function(stream){
       handleGUMSuccess.call(self, stream);
       createPeerConnection.call(self);
       attachStreamToPeerConnection.call(self);
-      createOffer.call(self);
-
+      if (self.callID === null){
+        LOGGER.log("No callID, calling createOffer")
+        createOffer.call(self);
+      } else {
+        LOGGER.log("We have a callID, setting remote desc on peerConnection")
+        createAnswer.call(self);
+      }
     })
     .catch(function(error){
       handleGUMError.call(self, error);
@@ -109,7 +160,7 @@ function sendDTMF(digits){
   LOGGER.log( "this.callID : " + this.callID);
   var request = {};
   request.wsp_version = "1";
-  request.method = "modify";
+  request.method = "verto.modify";
   request.params = {
     callID: this.callID,
     action: "sendDTMF",
@@ -136,7 +187,7 @@ function hangup(){
   }
 
   request.wsp_version = "1";
-  request.method = "hangup";
+  request.method = "verto.hangup";
   request.params = {
     callID: this.callID
   };
@@ -177,6 +228,33 @@ function setRemoteDescription(sdp){
       console.log("err");
     })
   );
+}
+
+function createAnswer(){
+  var offerOptions = {
+    offerToReceiveAudio: 1,
+    offerToReceiveVideo: 1
+  };
+
+  var self = this;
+
+  this.peerConnection.setRemoteDescription(
+    new RTCSessionDescription({
+      type: "offer",
+      sdp: self.clientObj._reattachParams.sdp
+    }))
+    .then(function() {
+      LOGGER.log("aeazeaz");
+      console.log("ok");
+      return self.peerConnection.createAnswer();
+    })
+    .then(function(answer){
+      LOGGER.log("dqdqs1");
+      return self.peerConnection.setLocalDescription(answer);
+    })
+    .then(function(){
+      LOGGER.log("Error while trying to send answer")
+    })
 }
 
 /**
@@ -275,10 +353,10 @@ function createPeerConnection(){
 }
 
 function startCall(){
-  var callID = Utils.generateGUID();
+  var callID = this.reattach ? this.callID : Utils.generateGUID();
   var request = {};
   request.wsp_version = "1";
-  request.method = "call";
+  request.method = this.reattach ? "verto.attach" : "verto.invite";
   request.params = {
     apiKey : this.clientObj._apiKey,
     apiVersion : __VERSION__,
