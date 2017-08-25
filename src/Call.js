@@ -195,17 +195,17 @@ function hangup(){
   this.clientObj._sendMessage(JSON.stringify(request));
 }
 
-function sendText(message){
+function sendText(message, fromDisplay = null){
   LOGGER.log("Sending text : " + message);
   var request = {};
 
-  // If this call is connected to a room, unsubscribe from events first
   if (this.callType === "conference"){
     request.wsp_version = "1";
     request.method = "verto.broadcast";
     request.params = {
       eventChannel: this.subscribedChannels.chatChannel,
-      fromID : this.conferenceMemberID.toString(),
+      conferenceMemberID: this.conferenceMemberID.toString(),
+      fromDisplay: fromDisplay,
       data: {
         action: "send",
         message: message
@@ -230,6 +230,13 @@ function setRemoteDescription(sdp){
   );
 }
 
+/**
+* Create and answer for FreeSWITCH
+*
+* This function is called when FeeSWICTH sent its SDP first. In the case
+* where we need to re attach a verto session to an existing call, this
+* function will be called.
+*/
 function createAnswer(){
   var offerOptions = {
     offerToReceiveAudio: 1,
@@ -244,16 +251,18 @@ function createAnswer(){
       sdp: self.clientObj._reattachParams.sdp
     }))
     .then(function() {
-      LOGGER.log("aeazeaz");
-      console.log("ok");
+      LOGGER.log("RTCSessionDescription created");
       return self.peerConnection.createAnswer();
     })
     .then(function(answer){
-      LOGGER.log("dqdqs1");
+      LOGGER.log("createAnswer returned successfully");
       return self.peerConnection.setLocalDescription(answer);
     })
     .then(function(){
-      LOGGER.log("Error while trying to send answer")
+      LOGGER.log("setLocalDescription returned successfully")
+    })
+    .catch(function(err){
+      LOGGER.log("Error : " + JSON.stringify(err))
     })
 }
 
