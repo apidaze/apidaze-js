@@ -93,6 +93,8 @@ var Call = function(clientObj, callID, params, listeners){
   this.sendText = sendText;
   this.stopLocalAudio = stopLocalAudio;
   this.startLocalAudio = startLocalAudio;
+  this.stopLocalVideo = stopLocalVideo;
+  this.startLocalVideo = startLocalVideo;
 
   var GUMConstraints = {
     audio: this.activateAudio
@@ -149,6 +151,22 @@ function stopLocalAudio(){
 
 function startLocalAudio(){
   this.localAudioVideoStream.getAudioTracks().forEach(
+    function(track) {
+      track.enabled = true;
+    }
+  );
+}
+
+function stopLocalVideo(){
+  this.localAudioVideoStream.getVideoTracks().forEach(
+    function(track) {
+      track.enabled = false;
+    }
+  );
+}
+
+function startLocalVideo(){
+  this.localAudioVideoStream.getVideoTracks().forEach(
     function(track) {
       track.enabled = true;
     }
