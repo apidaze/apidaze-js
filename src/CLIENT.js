@@ -116,6 +116,7 @@ const handleWebSocketOpen = function(){
   request.wsp_version = "1";
   request.method = "ping";
   request.params = {
+    apiKey: this._apiKey,
     sessid: this._sessid
   };
   this._sendMessage(JSON.stringify(request));
