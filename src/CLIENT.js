@@ -156,6 +156,13 @@ const handleWebSocketMessage = function(event){
 
   var json = JSON.parse(event.data);
 
+  if (json.error) {
+    if (json.error.message === "Permission Denied" && json.error.code === -32602) {
+      LOGGER.log("Not allowed to login");
+      return;
+    }
+  }
+
   // Handle echo reply to our echo request
   if (json.result && json.result.type === "echo_request"){
     handleEchoReply.call(this, json);
