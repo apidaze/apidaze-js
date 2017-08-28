@@ -17,7 +17,8 @@ var CLIENT = function(configuration){
     onReady,
     onDisconnected,
     onError,
-    debug
+    debug,
+    userKeys = {}
   } = configuration;
 
   this.speedTest = speedTest.bind(this);
@@ -33,9 +34,9 @@ var CLIENT = function(configuration){
     LOGGER.log("Ready");
     typeof onReady === "function" && onReady();
   };
-  this._onError = function(message){
-    typeof onError === "function" ? onError(message) : LOGGER.log("Error : " + message);
-    throw {ok: false, message: message}
+  this._onError = function(errorObj){
+    typeof onError === "function" ? onError(errorObj.message) : LOGGER.log("Error : " + errorObj.message);
+    throw {ok: false, message: errorObj.message, origin: errorObj.origin}
   };
 
   if (debug) {
@@ -46,21 +47,22 @@ var CLIENT = function(configuration){
   }
 
   if (!apiKey){
-    this._onError("Please provide apiKey")
+    this._onError({origin: "CLIENT", message: "Please provide an apiKey"})
   }
 
   if (!"WebSocket" in window) {
-    this._onError("WebSocket not supported")
+    this._onError({origin: "CLIENT", message: "WebSocket not supported"})
   }
 
   if (!/wss:\/\//.test(wsurl)) {
-    this._onError("Wrong WebSocket URL, must start with wss://")
+    this._onError({origin: "CLIENT", message: "Wrong WebSocket URL, must start with wss://"})
   }
 
   this._callArray = [];
   this._apiKey = apiKey;
   this._status = STATUS_INIT;
   this._sessid = sessid;
+  this._userKeys = userKeys
 
   this._websocket = new WebSocket(wsurl);
   this._websocket.onopen = handleWebSocketOpen.bind(this);
@@ -74,12 +76,15 @@ CLIENT.prototype.version = __VERSION__
 CLIENT.prototype._sendMessage = function(json){
 
   if (this._websocket.readyState !== this._websocket.OPEN){
-    this._onError("Client is not ready (WebSocket not open)");
+    this._onError({origin: "CLIENT", message: "Client is not ready (WebSocket not open)"});
     return;
   }
 
   if ((this._status & STATUS_READY) === 0 && JSON.parse(json).method !== "ping"){
-    this._onError("Client is not ready (hello not received from server)");
+    this._onError({
+      origin: "CLIENT",
+      message: "Client is not ready (hello not received from server)"
+    });
     return;
   }
 
@@ -93,6 +98,7 @@ CLIENT.prototype.call = function(params, listeners){
     this._callArray.push(callObj);
     return callObj;
   } catch(error){
+    error.origin = "call";
     this._onError(error);
   }
 }
@@ -103,6 +109,7 @@ CLIENT.prototype.reattach = function(callID, params, listeners){
     this._callArray.push(callObj);
     return callObj;
   } catch(error){
+    error.origin = "reattach";
     this._onError(error);
   }
 }
@@ -117,7 +124,8 @@ const handleWebSocketOpen = function(){
   request.method = "ping";
   request.params = {
     apiKey: this._apiKey,
-    sessid: this._sessid
+    sessid: this._sessid,
+    userKeys: this._userKeys
   };
   this._sendMessage(JSON.stringify(request));
 }

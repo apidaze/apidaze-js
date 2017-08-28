@@ -30,11 +30,11 @@ var Call = function(clientObj, callID, params, listeners){
     activateAudio = true,
     activateVideo = false,
     videoParams = {},
-    audioParams = {}
+    audioParams = {},
+    userKeys
   } = params;
 
   var {
-    onError,
     onRinging,
     onAnswer,
     onHangup,
@@ -82,10 +82,6 @@ var Call = function(clientObj, callID, params, listeners){
   this._onRoomTalking = handleRoomTalking;
   this._onRoomAdd = handleRoomAdd;
   this._onRoomDel = handleRoomDel;
-  this._onError = function(message){
-    typeof onError === "function" ? onError(message) : LOGGER.log("Error : " + message);
-    throw {ok: false, message: message}
-  };
 
   // Functions that can be called by dev
   this.sendDTMF = sendDTMF;
@@ -95,6 +91,10 @@ var Call = function(clientObj, callID, params, listeners){
   this.startLocalAudio = startLocalAudio;
   this.stopLocalVideo = stopLocalVideo;
   this.startLocalVideo = startLocalVideo;
+
+  if (this.clientObj._websocket.readyState !== this.clientObj._websocket.OPEN){
+    throw {message: "WebSocket is closed"}
+  }
 
   var GUMConstraints = {
     audio: this.activateAudio
@@ -304,7 +304,7 @@ function createOffer(){
       self.peerConnection.setLocalDescription(desc);
     },
     function(error){
-      self._onError(error);
+      throw JSON.stringify(error);
     }
   );
 }
@@ -478,7 +478,7 @@ function handleGUMSuccess(stream){
 }
 
 function handleGUMError(error){
-  this._onError(error)
+  throw JSON.stringify(error);
 }
 
 export default Call;
