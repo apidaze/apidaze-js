@@ -1,6 +1,6 @@
 var Utils = {};
 
-Utils.generateGUID = (typeof(window.crypto) !== 'undefined' && typeof(window.crypto.getRandomValues) !== 'undefined') ?
+Utils.generateGUID = (typeof window === "object" && typeof(window.crypto) !== 'undefined' && typeof(window.crypto.getRandomValues) !== 'undefined') ?
 function() {
     // If we have a cryptographically secure PRNG, use that
     // http://stackoverflow.com/questions/6906916/collisions-when-generating-uuids-in-javascript

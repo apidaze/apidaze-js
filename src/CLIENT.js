@@ -9,7 +9,7 @@ var STATUS_READY =                2;
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT |';
 var LOGGER = new Logger(false, LOG_PREFIX);
 
-var CLIENT = function(configuration){
+var CLIENT = function(configuration = {}){
   let {
     apiKey,
     wsurl,
@@ -23,6 +23,7 @@ var CLIENT = function(configuration){
 
   this.speedTest = speedTest.bind(this);
   this.ping = ping.bind(this);
+  this.shutdown = shutdown.bind(this);
 
   // User defined handlers
   this._onDisconnected = function(){
@@ -35,8 +36,17 @@ var CLIENT = function(configuration){
     typeof onReady === "function" && onReady();
   };
   this._onError = function(errorObj){
+    /**
+    * We may receive errors from FreeSWITCH over the WebSocket channel, in
+    * this case, any exception thrown would be un-catchable. Such errors
+    * are marcked with a type === "async". For more details, see :
+    * https://stackoverflow.com/questions/16316815/catch-statement-does-not-catch-thrown-error
+    */
     typeof onError === "function" ? onError(errorObj.message) : LOGGER.log("Error : " + errorObj.message);
-    throw {ok: false, message: errorObj.message, origin: errorObj.origin}
+
+    if (errorObj.type !== "async"){
+      throw {ok: false, message: errorObj.message, origin: errorObj.origin}
+    }
   };
 
   if (debug) {
@@ -99,6 +109,7 @@ CLIENT.prototype.call = function(params, listeners){
     return callObj;
   } catch(error){
     error.origin = "call";
+    erro.type = "async";
     this._onError(error);
   }
 }
@@ -110,6 +121,7 @@ CLIENT.prototype.reattach = function(callID, params, listeners){
     return callObj;
   } catch(error){
     error.origin = "reattach";
+    erro.type = "async";
     this._onError(error);
   }
 }
@@ -135,7 +147,7 @@ const handleWebSocketOpen = function(){
 */
 const handleWebSocketError = function(){
   LOGGER.log("handleWebSocketError | Error ");
-  this._onError("WebSocket error");
+  this._onError({type: "async", origin: "CLIENT", message: "WebSocket error"});
 }
 
 /**
@@ -167,6 +179,7 @@ const handleWebSocketMessage = function(event){
   if (json.error) {
     if (json.error.message === "Permission Denied" && json.error.code === -32602) {
       LOGGER.log("Not allowed to login");
+      this._onError({type: "async", origin: "CLIENT", message: "Not allowed to login"})
       return;
     }
   }
@@ -400,7 +413,11 @@ const handleVertoEvent = function(event){
     });
 
     if (index < 0){
-      this._onError("Failed to find call object that matches with conf event");
+      this._onError({
+        type: "async",
+        message: "Failed to find call object that matches with conf event",
+        origin: "conference"
+      });
     }
 
     switch(event.params.data.action){
@@ -496,6 +513,11 @@ const handleEchoReply = function(event) {
     this._pingCallback(rtt);
     this._pingCallback = null;
   }
+}
+
+const shutdown = function() {
+  this._websocket.close();
+  this._websocket = null;
 }
 
 const speedTest = function (userCallback, bytes = 1024*256) {
