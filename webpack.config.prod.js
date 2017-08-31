@@ -27,9 +27,9 @@ module.exports = {
   },
   plugins: [
     new webpack.DefinePlugin({
-        process.env.__VERSION__: JSON.stringify(GITBRANCH),
-        process.env.PRODUCTION: JSON.stringify(true),
-        process.env.DEVELOPMENT: JSON.stringify(false),
+        'process.env.__VERSION__': JSON.stringify(GITBRANCH),
+        'process.env.PRODUCTION': JSON.stringify(true),
+        'process.env.DEVELOPMENT': JSON.stringify(false),
     })
   ]
 };
