@@ -263,7 +263,7 @@ const handleWebSocketMessage = function(event){
     }
   }
 
-  if (json.method === "verto.event"){
+  if (json.method === "event"){
     handleVertoEvent.call(this, json);
     return;
   }
@@ -292,7 +292,7 @@ const handleWebSocketMessage = function(event){
   * call setRemoteDescription right way
   */
   switch(json.method){
-    case "verto.ringing":
+    case "ringing":
     LOGGER.log("Ringing on call with callID " + this._callArray[index].callID);
     // FS may send SDP along with ringing event
     if (json.params.sdp){
@@ -301,7 +301,7 @@ const handleWebSocketMessage = function(event){
     this._callArray[index]._onRinging();
     break;
 
-    case "verto.media":
+    case "media":
     // In this case, we consider the call is ringing
     LOGGER.log("Found call index : " + index);
     if (json.params.sdp){
@@ -310,7 +310,7 @@ const handleWebSocketMessage = function(event){
     this._callArray[index]._onRinging();
     break;
 
-    case "verto.answer":
+    case "answer":
     LOGGER.log("Found call index : " + index);
     if (json.params.sdp){
       this._callArray[index].setRemoteDescription(json.params.sdp);
@@ -318,7 +318,7 @@ const handleWebSocketMessage = function(event){
     this._callArray[index]._onAnswer();
     break;
 
-    case "verto.hangup":
+    case "hangup":
     LOGGER.log("Hangup call with callID " + this._callArray[index].callID);
     this._callArray[index]._onHangup();
     this._callArray[index] = null;

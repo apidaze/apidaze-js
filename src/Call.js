@@ -178,7 +178,7 @@ function sendDTMF(digits){
   LOGGER.log( "this.callID : " + this.callID);
   var request = {};
   request.wsp_version = "1";
-  request.method = "verto.modify";
+  request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "sendDTMF",
@@ -205,7 +205,7 @@ function hangup(){
   }
 
   request.wsp_version = "1";
-  request.method = "verto.hangup";
+  request.method = "hangup";
   request.params = {
     callID: this.callID
   };
@@ -383,7 +383,7 @@ function startCall(){
   var callID = this.reattach ? this.callID : Utils.generateGUID();
   var request = {};
   request.wsp_version = "1";
-  request.method = this.reattach ? "verto.attach" : "verto.invite";
+  request.method = this.reattach ? "verto.attach" : "call";
   request.params = {
     apiKey : this.clientObj._apiKey,
     apiVersion : __VERSION__,
