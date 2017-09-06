@@ -2,7 +2,7 @@ import * as WebRTCAdapter from "webrtc-adapter";
 import Utils from './Utils.js';
 import Logger from './Logger.js';
 
-var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
+var __VERSION__ = process.env.VERSIONSTR // webpack defineplugin variable
 
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT | Call |' ;
 var LOGGER = new Logger(false, LOG_PREFIX);

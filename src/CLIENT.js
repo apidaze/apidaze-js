@@ -2,7 +2,7 @@ import Call from './Call.js';
 import Utils from './Utils.js';
 import Logger from './Logger.js';
 
-var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
+var __VERSION__ = process.env.VERSIONSTR // webpack defineplugin variable
 
 var STATUS_INIT =                 1;
 var STATUS_READY =                2;

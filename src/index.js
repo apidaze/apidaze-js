@@ -1,6 +1,6 @@
 import CLIENT from './CLIENT.js';
 
-var __VERSION__ = "dev-" + process.env.__VERSION__ // webpack defineplugin variable
+var __VERSION__ = process.env.VERSIONSTR // webpack defineplugin variable
 
 var version = __VERSION__
 
