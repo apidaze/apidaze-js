@@ -59,6 +59,10 @@ var Call = function(clientObj, callID, params, listeners){
   this.remoteAudioVideo = document.createElement("video");
   this.remoteAudioVideo.autoplay = "autoplay";
   this.remoteAudioVideo.controls = "controls";
+  if (activateVideo === false){
+    this.remoteAudioVideo.style.display = "none";
+  }
+
   document.body.appendChild(this.remoteAudioVideo);
 
   this.localAudioVideoStream = null;
