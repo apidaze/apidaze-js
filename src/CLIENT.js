@@ -344,8 +344,10 @@ const handleWebSocketMessage = function(event){
 */
 const handleVertoEvent = function(event){
   var params = event.params;
+
   LOGGER.log("Received event of type " + params.eventType);
   LOGGER.log("Event channel UUID : " + params.eventChannelUUID);
+  LOGGER.log("Event channel : " + params.eventChannel);
   var index = this._callArray.findIndex(function(callObj){
     return callObj.callID === params.eventChannelUUID;
   });
@@ -400,41 +402,48 @@ const handleVertoEvent = function(event){
     return;
   }
 
-  /**
-  * Now let's check if the event is coming from a conference room
-  */
-  if (/^conference-liveArray/.test(event.params.eventChannel)){
+  if (index < 0){
     /**
-    * That's a conference room event (TALKING, etc.), find the right callObj
-    * and call its handler
+    * Could not find call that matches with eventChannelUUID, try to find
+    * a match using eventChannel. This occurs in the following cases :
+    * - a liveArray event indicating who's talking, entering, leaving the room
+    *   has been received
+    * - a group chat message is the room has been received
     */
     index = this._callArray.findIndex(function(callObj){
-      return callObj.subscribedChannels.laChannel === params.eventChannel;
+      return callObj.subscribedChannelsArray.indexOf(params.eventChannel) >= 0;
     });
-
-    if (index < 0){
-      this._onError({
-        type: "async",
-        message: "Failed to find call object that matches with conf event",
-        origin: "conference"
-      });
-    }
-
-    switch(event.params.data.action){
-      case "modify":
-      // Who is talking events are received here
-      this._callArray[index]._onRoomTalking(event.params.data.data);
-      break;
-      case "add":
-      // Some joined the conference
-      this._callArray[index]._onRoomAdd(event.params.data.data);
-      break;
-      case "del":
-      this._callArray[index]._onRoomDel(event.params.data.data);
-      break;
-    }
   }
 
+  if (index >= 0){
+    if (/^conference-liveArray/.test(event.params.eventChannel)){
+      switch(event.params.data.action){
+        case "modify":
+        // Who is talking events are received here
+        this._callArray[index]._onRoomTalking(event.params.data.data);
+        break;
+        case "add":
+        // Some joined the conference
+        this._callArray[index]._onRoomAdd(event.params.data.data);
+        break;
+        case "del":
+        // Someone left the conference
+        this._callArray[index]._onRoomDel(event.params.data.data);
+        break;
+      }
+    } else if (/^conference-chat/.test(event.params.eventChannel)){
+      // group chat message received
+      this._callArray[index]._onRoomChatMessage(event.params.data);
+    }
+
+    return;
+  }
+
+  this._onError({
+    type: "async",
+    message: "Failed to find call object that matches with conf event",
+    origin: "conference"
+  });
 }
 
 /**

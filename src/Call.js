@@ -38,6 +38,7 @@ var Call = function(clientObj, callID, params, listeners){
     onRinging,
     onAnswer,
     onHangup,
+    onRoomChatMessage,
     onRoomMembersInitialList,
     onRoomTalking,
     onRoomAdd,
@@ -70,6 +71,7 @@ var Call = function(clientObj, callID, params, listeners){
   this.userAnswerCallback = onAnswer;
   this.userHangupCallback = onHangup;
   this.userRoomMembersInitialListCallback = onRoomMembersInitialList;
+  this.userRoomChatMessageCallback = onRoomChatMessage;
   this.userRoomTalkingCallback = onRoomTalking;
   this.userRoomDelCallback = onRoomDel;
   this.userRoomAddCallback = onRoomAdd;
@@ -78,6 +80,7 @@ var Call = function(clientObj, callID, params, listeners){
   this._onRinging = handleRinging;
   this._onAnswer = handleAnswer;
   this._onHangup = handleHangup;
+  this._onRoomChatMessage = handleRoomChatMessage;
   this._onRoomMembersInitialList = handleMembersInitialList;
   this._onRoomTalking = handleRoomTalking;
   this._onRoomAdd = handleRoomAdd;
@@ -413,6 +416,15 @@ function handleHangup(){
   this.peerConnection = null;
   this.localAudioVideoStream = null;
   typeof this.userHangupCallback === "function" && this.userHangupCallback();
+}
+
+function handleRoomChatMessage(message){
+  LOGGER.log("Received message : " + JSON.stringify(message));
+
+  // remove type from message
+  delete message.type;
+
+  typeof this.userRoomChatMessageCallback === "function" && this.userRoomChatMessageCallback(msg);
 }
 
 function handleMembersInitialList(members){
