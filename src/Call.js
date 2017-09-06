@@ -202,15 +202,16 @@ function sendDTMF(digits){
   this.clientObj._sendMessage(JSON.stringify(request));
 }
 
-function inviteToConference(destination, number, caller_id_number){
-  LOGGER.log("Inviting number " + number + " to conference " + destination);
+function inviteToConference(number, caller_id_number){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Inviting number " + number + " to conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "inviteToConference",
-    destination: destination,
+    destination: roomName,
     number: number,
     caller_id_number: caller_id_number
   };
@@ -218,88 +219,94 @@ function inviteToConference(destination, number, caller_id_number){
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function unmuteAllInConference(destination){
-  LOGGER.log("Unmute everybody in conference " + destination);
+function unmuteAllInConference(){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Unmute everybody in conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "unmuteAllInConference",
-    destination: destination
+    destination: roomName
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function muteAllInConference(destination){
-  LOGGER.log("Mute everybody in conference " + destination);
+function muteAllInConference(){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Mute everybody in conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "muteAllInConference",
-    destination: destination
+    destination: roomName,
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function toggleMuteInConference(destination, conferenceMemberID){
-  LOGGER.log("Toggling mute status for member (" + conferenceMemberID + ") in conference " + destination);
+function toggleMuteInConference(conferenceMemberID){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Toggling mute status for member (" + conferenceMemberID + ") in conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "toggleMuteInConference",
-    destination: destination,
+    destination: roomName,
     conferenceMemberID: conferenceMemberID
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function unmuteInConference(destination, conferenceMemberID){
-  LOGGER.log("Unmuting member (" + conferenceMemberID + ") in conference " + destination);
+function unmuteInConference(conferenceMemberID){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Unmuting member (" + conferenceMemberID + ") in conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "unmuteInConference",
-    destination: destination,
+    destination: roomName,
     conferenceMemberID: conferenceMemberID
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function muteInConference(destination, conferenceMemberID){
-  LOGGER.log("Muting member (" + conferenceMemberID + ") in conference " + destination);
+function muteInConference(conferenceMemberID){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Muting member (" + conferenceMemberID + ") in conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "muteInConference",
-    destination: destination,
+    destination: roomName,
     conferenceMemberID: conferenceMemberID
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function kickFromConference(destination, uuid){
-  LOGGER.log("Kicking member (" + uuid + ") out of conference " + destination);
+function kickFromConference(uuid){
+  var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
+  LOGGER.log("Kicking member (" + uuid + ") out of conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
   request.params = {
     callID: this.callID,
     action: "kickFromConference",
-    destination: destination,
+    destination: roomName,
     uuid: uuid
   };
 
@@ -557,7 +564,8 @@ function handleRoomTalking(dataArray){
     caller_id_number: dataArray[1],
     talking: status.audio.talking,
     muted: status.audio.muted,
-    energyScore: status.audio.energyScore.toString()
+    energyScore: status.audio.energyScore.toString(),
+    sessid: dataArray[7]
   };
 
   typeof this.userRoomTalkingCallback === "function" && this.userRoomTalkingCallback(event);
@@ -570,20 +578,22 @@ function handleRoomAdd(dataArray){
     type: "room.add",
     conferenceMemberID: parseInt(dataArray[0]).toString(),
     nickname: dataArray[2],
-    caller_id_number: dataArray[1]
+    caller_id_number: dataArray[1],
+    sessid: dataArray[7]
   };
 
   typeof this.userRoomAddCallback === "function" && this.userRoomAddCallback(event);
 }
 
 function handleRoomDel(dataArray){
-  LOGGER.log("Add event : " + JSON.stringify(dataArray));
+  LOGGER.log("Del event : " + JSON.stringify(dataArray));
   var status = JSON.parse(dataArray[4]);
   var event = {
     type: "room.del",
     conferenceMemberID: parseInt(dataArray[0]).toString(),
     nickname: dataArray[2],
-    caller_id_number: dataArray[1]
+    caller_id_number: dataArray[1],
+    sessid: dataArray[7]
   };
 
   typeof this.userRoomDelCallback === "function" && this.userRoomDelCallback(event);

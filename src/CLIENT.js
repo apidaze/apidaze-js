@@ -417,18 +417,22 @@ const handleVertoEvent = function(event){
 
   if (index >= 0){
     if (/^conference-liveArray/.test(event.params.eventChannel)){
+      console.log("event.params.data : ", JSON.stringify(event.params.data));
+
+      let data = event.params.data.data;
+      data.push(event.params.data.hashKey);
       switch(event.params.data.action){
         case "modify":
         // Who is talking events are received here
-        this._callArray[index]._onRoomTalking(event.params.data.data);
+        this._callArray[index]._onRoomTalking(data);
         break;
         case "add":
         // Some joined the conference
-        this._callArray[index]._onRoomAdd(event.params.data.data);
+        this._callArray[index]._onRoomAdd(data);
         break;
         case "del":
         // Someone left the conference
-        this._callArray[index]._onRoomDel(event.params.data.data);
+        this._callArray[index]._onRoomDel(data);
         break;
       }
     } else if (/^conference-chat/.test(event.params.eventChannel)){
