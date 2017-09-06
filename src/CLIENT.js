@@ -102,26 +102,26 @@ CLIENT.prototype._sendMessage = function(json){
   this._websocket.send(json);
 }
 
-CLIENT.prototype.call = function(params, listeners){
+CLIENT.prototype.call = function(params, listeners = {}){
   try {
     var callObj = new Call(this, null, params, listeners);
     this._callArray.push(callObj);
     return callObj;
   } catch(error){
     error.origin = "call";
-    erro.type = "async";
+    error.type = "async";
     this._onError(error);
   }
 }
 
-CLIENT.prototype.reattach = function(callID, params, listeners){
+CLIENT.prototype.reattach = function(callID, params, listeners = {}){
   try {
     var callObj = new Call(this, callID, params, listeners);
     this._callArray.push(callObj);
     return callObj;
   } catch(error){
     error.origin = "reattach";
-    erro.type = "async";
+    error.type = "async";
     this._onError(error);
   }
 }
