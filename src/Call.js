@@ -297,9 +297,9 @@ function muteInConference(conferenceMemberID){
   this.clientObj._sendMessage(JSON.stringify(request));
 };
 
-function kickFromConference(uuid){
+function kickFromConference(conferenceMemberID){
   var roomName = this.conferenceName.substring(this.conferenceName.indexOf("-") + 1);
-  LOGGER.log("Kicking member (" + uuid + ") out of conference " + roomName);
+  LOGGER.log("Kicking member (" + conferenceMemberID + ") out of conference " + roomName);
   var request = {};
   request.wsp_version = "1";
   request.method = "modify";
@@ -307,7 +307,7 @@ function kickFromConference(uuid){
     callID: this.callID,
     action: "kickFromConference",
     destination: roomName,
-    uuid: uuid
+    conferenceMemberID: conferenceMemberID
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
