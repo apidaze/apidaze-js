@@ -160,15 +160,18 @@ const handleWebSocketMessage = function(event){
   if (event.data[0] == "#" && event.data[1] == "S" && event.data[2] == "P") {
       if (event.data[3] == "U") {
           this.up_dur = parseInt(event.data.substring(4));
-      } else if (this._speedCB && event.data[3] == "D") {
+      } else if (event.data[3] == "D") {
           this.down_dur = parseInt(event.data.substring(4));
 
           var up_kps = (((this._speedBytes * 8) / (this.up_dur / 1000)) / 1024).toFixed(0);
           var down_kps = (((this._speedBytes * 8) / (this.down_dur / 1000)) / 1024).toFixed(0);
 
           console.info("Speed Test: Up: " + up_kps + "kbit/s Down: " + down_kps + "kbits/s");
-          this._speedCB(event, { upDur: this.up_dur, downDur: this.down_dur, upKPS: up_kps, downKPS: down_kps });
-          this._speedCB = null;
+
+          if (typeof this._speedCB === "function"){
+            this._speedCB({upDur: this.up_dur, downDur: this.down_dur, upKPS: up_kps, downKPS: down_kps });
+            this._speedCB = null;
+          }
       }
 
       return;
@@ -420,7 +423,6 @@ const handleVertoEvent = function(event){
       console.log("event.params.data : ", JSON.stringify(event.params.data));
 
       let data = event.params.data.data;
-      data.push(event.params.data.hashKey);
       switch(event.params.data.action){
         case "modify":
         // Who is talking events are received here
