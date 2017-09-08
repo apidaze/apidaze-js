@@ -163,8 +163,8 @@ const handleWebSocketMessage = function(event){
       } else if (event.data[3] == "D") {
           this.down_dur = parseInt(event.data.substring(4));
 
-          var up_kps = (((this._speedBytes * 8) / (this.up_dur / 1000)) / 1024).toFixed(0);
-          var down_kps = (((this._speedBytes * 8) / (this.down_dur / 1000)) / 1024).toFixed(0);
+          var up_kps = (((this._speedBytes * 8) / (this.up_dur / 1000)) / 1000).toFixed(0);
+          var down_kps = (((this._speedBytes * 8) / (this.down_dur / 1000)) / 1000).toFixed(0);
 
           console.info("Speed Test: Up: " + up_kps + "kbit/s Down: " + down_kps + "kbits/s");
 
