@@ -601,12 +601,12 @@ function handleRoomDel(dataArray){
 
 function handleRinging(userCallback){
  LOGGER.log("Ringing");
- typeof userCallback === "function" && userCallback();
+ typeof this.userRingingCallback === "function" && this.userRingingCallback();
 }
 
 function handleAnswer(userCallback){
   LOGGER.log("Answer");
-  typeof userCallback === "function" && userCallback();
+  typeof this.userAnswerCallback === "function" && this.userAnswerCallback();
 }
 
 function handleGUMSuccess(stream){
