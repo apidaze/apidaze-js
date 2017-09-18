@@ -3,7 +3,7 @@ var childProcess = require('child_process');
 var webpack = require('webpack');
 var PKG_VERSION = require('./package.json').version;
 var GITBRANCH = childProcess.execSync('git branch | grep \\* | cut -d \" \" -f2').toString().trim();
-var VERSIONSTR = PKG_VERSION + "-" + GITBRANCH;
+var VERSIONSTR = PKG_VERSION;
 
 module.exports = {
   entry: './src/index.js',
