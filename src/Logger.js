@@ -2,9 +2,11 @@ var Logger = function(debug, prefix){
   this._debug = debug;
   this._prefix = prefix;
 
-  this.log = function(message){
+  this.log = function(){
     if (this._debug){
-      console.log(this._prefix, message);
+      var args = Array.prototype.slice.call(arguments);
+      args.unshift(prefix + " ");
+      console.log.apply(console, args);
     }
   }
 }
