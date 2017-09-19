@@ -30,10 +30,10 @@ var CLIENT = function(configuration = {}){
     typeof onDisconnected === "function" && onDisconnected();
     LOGGER.log("Disconnected")
   };
-  this._onReady = function(){
+  this._onReady = function(sessionObj){
     this._status += STATUS_READY;
     LOGGER.log("Ready");
-    typeof onReady === "function" && onReady();
+    typeof onReady === "function" && onReady(sessionObj);
   };
   this._onError = function(errorObj){
     /**
@@ -272,7 +272,7 @@ const handleWebSocketMessage = function(event){
   }
 
   if (json.method === "verto.clientReady"){
-    this._onReady();
+    this._onReady({ id: json.params.id, sessid: json.params.sessid });
     return;
   }
 
