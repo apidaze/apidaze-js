@@ -7,6 +7,82 @@
   <body>
     <div id='root'>
       <h1><%= htmlWebpackPlugin.options.title %></h1>
+      <p>
+        APIdaze will check your API key and fetch the corresponding External
+        Script URL. A <code>userKeys</code> property is passed to the External
+        Script URL, which in return is expected to send and XML block to validate
+        the user identity.
+      </p>
+      <p>
+        Sample <code>userKeys</code> JavaScript property :
+        <pre>
+          {
+            command: "auth",
+            userid: "john"
+          }
+        </pre>
+      </p>
+      <p>
+        Expected XML from External Script :
+        <pre>
+          &ltdocument&gt
+           &ltvariables&gt
+             &ltuserid&gtjohn&lt/userid&gt
+           &lt/variables&gt
+          &lt/document&gt
+        </pre>
+      </p>
+      <div>
+        <span>API key : </span>
+        <input id="apikeyTextId" type="text" placeholder="e.g. : 23dh4r56">
+      </div>
+      <div>
+        <span>User name : </span>
+        <input id="userNameId" type="text" placeholder="e.g. : john">
+        <input id="checkButtonId" type="button" value="Check">
+      </div>
     </div>
   </body>
+  <script>
+    const checkButtonObj = document.getElementById("checkButtonId");
+    const apikeyTextObj = document.getElementById("apikeyTextId");
+    const userNameObj = document.getElementById("userNameId");
+
+    var APIdazeClientObj = null;
+
+    checkButtonObj.onclick = function() {
+      if (/^[a-zA-Z0-9]{8}$/.test(apikeyTextObj.value) && /^[a-zA-Z0-9_-]/.test(userNameObj.value)) {
+        console.log("Checking...");
+        toggleInputs();
+
+        APIdazeClientObj = new APIdaze.CLIENT({
+          apiKey: apikeyTextObj.value,
+          wsurl: "wss://ws2-old.apidaze.io",
+          debug: true,
+          userKeys: {
+            command: "auth",
+            userid: userNameObj.value
+          },
+          onReady: function() {
+            alert("Logged in as " + userNameObj.value + " !");
+            toggleInputs();
+          },
+          onError: function(errorMessage){
+            alert("Got error : " + errorMessage);
+            toggleInputs();
+          }
+        });
+      } else {
+        alert("Wrong API key or illegal character in User name");
+      }
+    }
+
+    var toggleInputs = function(){
+      console.log("Toggling inputs");
+      checkButtonObj.disabled === true ? checkButtonObj.disabled = false : checkButtonObj.disabled = true;
+      apikeyTextObj.disabled === true ? apikeyTextObj.disabled = false : apikeyTextObj.disabled = true;;
+      userNameObj.disabled === true ? userNameObj.disabled = false : userNameObj.disabled = true;;
+    }
+
+  </script>
 </html>

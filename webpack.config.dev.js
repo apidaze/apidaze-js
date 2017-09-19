@@ -46,13 +46,13 @@ module.exports = {
       template: 'html_webpack_plugin_templates/index.template.ejs'
     }),
     new HtmlWebpackPlugin({
-      title: 'Anonymous login',
+      title: 'API key check and anonymous login',
       filename: 'samples/anonymous_login/index.html',
       template: 'html_webpack_plugin_templates/anonymous_login/index.template.ejs',
       inject: 'body',
     }),
     new HtmlWebpackPlugin({
-      title: 'Check User ID from External Script',
+      title: 'API key check and user id validation from External Script',
       filename: 'samples/external_script_login/index.html',
       template: 'html_webpack_plugin_templates/external_script_login/index.template.ejs',
       inject: 'body',
