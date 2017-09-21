@@ -37,7 +37,7 @@ module.exports = {
     ]
   },
   devServer: {
-    contentBase: path.join(__dirname, "example"),
+    contentBase: path.join(__dirname, "samples"),
     compress: true,
     port: 9000
   },
@@ -48,24 +48,6 @@ module.exports = {
         'process.env.PRODUCTION': JSON.stringify(false),
         'process.env.DEVELOPMENT': JSON.stringify(true),
         'process.env.APIDAZE_JS_FILENAME': JSON.stringify(APIDAZE_JS_FILENAME)
-    }),
-    new CleanWebpackPlugin(pathsToClean, cleanOptions),
-    new HtmlWebpackPlugin({
-      title: 'APIdaze Samples',
-      filename: 'samples/index.html',
-      template: 'html_webpack_plugin_templates/index.template.ejs'
-    }),
-    new HtmlWebpackPlugin({
-      title: 'API key check and anonymous login',
-      filename: 'samples/anonymous_login/index.html',
-      template: 'html_webpack_plugin_templates/anonymous_login/index.template.ejs',
-      inject: 'body',
-    }),
-    new HtmlWebpackPlugin({
-      title: 'API key check and user id validation from External Script',
-      filename: 'samples/external_script_login/index.html',
-      template: 'html_webpack_plugin_templates/external_script_login/index.template.ejs',
-      inject: 'body',
     })
   ]
 };
