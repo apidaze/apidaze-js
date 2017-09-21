@@ -1,6 +1,5 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 var childProcess = require('child_process');
 var webpack = require('webpack');
@@ -8,16 +7,6 @@ var PKG_VERSION = require('./package.json').version;
 var GITBRANCH = childProcess.execSync('git branch | grep \\* | cut -d \" \" -f2').toString().trim();
 var VERSIONSTR = PKG_VERSION + "-dev-" + GITBRANCH;
 var APIDAZE_JS_FILENAME = "APIdaze-" + VERSIONSTR + ".js";
-
-var pathsToClean = [
-  'dist'
-]
-
-// the clean options to use
-let cleanOptions = {
-  exclude:  ['samples'],
-  verbose:  true
-}
 
 module.exports = {
   entry: './src/index.js',
