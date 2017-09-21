@@ -9,6 +9,16 @@ var GITBRANCH = childProcess.execSync('git branch | grep \\* | cut -d \" \" -f2'
 var VERSIONSTR = PKG_VERSION + "-dev-" + GITBRANCH;
 var APIDAZE_JS_FILENAME = "APIdaze-" + VERSIONSTR + ".js";
 
+var pathsToClean = [
+  'dist'
+]
+
+// the clean options to use
+let cleanOptions = {
+  exclude:  ['samples'],
+  verbose:  true
+}
+
 module.exports = {
   entry: './src/index.js',
   output: {
@@ -39,7 +49,7 @@ module.exports = {
         'process.env.DEVELOPMENT': JSON.stringify(true),
         'process.env.APIDAZE_JS_FILENAME': JSON.stringify(APIDAZE_JS_FILENAME)
     }),
-    new CleanWebpackPlugin(['dist']),
+    new CleanWebpackPlugin(pathsToClean, cleanOptions),
     new HtmlWebpackPlugin({
       title: 'APIdaze Samples',
       filename: 'samples/index.html',
