@@ -6,10 +6,14 @@
   </head>
   <body>
     <div id='root'>
-      <h1>API key check and anonymous login</h1>
+      <h1>API key check</h1>
+      <h3>
+        This is a simple example of how to instantiate the JavaScript API.
+      </h3>
       <p>
         APIdaze will check your API key and fetch the corresponding External
-        Script URL. On success, a <code>sessid</code> parameter is returned.
+        Script URL. On success, a <code>sessid</code> parameter is returned and
+        and APIdaze.CLIENT object is created.
       </p>
       <div>
         <span>API key : </span>
@@ -32,7 +36,7 @@
           wsurl: "wss://ws2-dev-fr-par-1.apidaze.io",
           debug: true,
           onReady: function() {
-            alert("Logged in anonymously, and well, successfully !");
+            alert("Success !");
             toggleInputs();
           },
           onError: function(errorMessage){
