@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <title>Sample App</title>
+  </head>
+  <body>
+    <div id='root'>
+      <h1>RTT to server</h1>
+      <h3>
+        Dsiplay the Round Trip Time from your computer to the VoIP server.
+      </h3>
+      <p>
+        Knowing the 'distance' in milliseconds from your computer to the VoIP
+        server you're attached to is very useful, especially if you're running
+        some WebRTC application.
+      </p>
+      <div>
+        <span>API key : </span>
+        <input id="apikeyTextId" type="text" placeholder="e.g. : 23dh4r56">
+        <input id="apikeyButtonId" type="button" value="Connect">
+      </div>
+      <div id="serverInfoId" style="display:none">
+        <h4>
+          Server hostname : ws2-dev-fr-par-1.apidaze.io
+        </h4>
+        <h4>
+          RTT : <span id="rttId">N/A</span> msec <span id="rttAppreciationId"></span>
+        </h4>
+      </div>
+    </div>
+  <script type="text/javascript" src="../dist/APIdaze-2.0.0-dev-master.js"></script></body>
+  <script>
+    const apikeyButtonObj = document.getElementById("apikeyButtonId");
+    const apikeyTextObj = document.getElementById("apikeyTextId");
+    const serverInfoObj = document.getElementById("serverInfoId");
+    const rttObj = document.getElementById("rttId");
+    const rttAppreciationObj = document.getElementById("rttAppreciationId");
+
+    var APIdazeClientObj = null;
+
+    apikeyButtonObj.onclick = function() {
+      if (/^[a-zA-Z0-9]{8}$/.test(apikeyTextObj.value)) {
+        toggleInputs();
+        console.log("Connecting...");
+        APIdazeClientObj = new APIdaze.CLIENT({
+          apiKey: apikeyTextObj.value,
+          wsurl: "wss://ws2-dev-fr-par-1.apidaze.io",
+          debug: true,
+          onReady: function() {
+            alert("Success !");
+            toggleInputs();
+            displayServerInfo();
+            getRTT();
+          },
+          onError: function(errorMessage){
+            alert("Got error : " + errorMessage);
+            toggleInputs();
+            displayServerInfo();
+          }
+        });
+      } else {
+        alert("Wrong API key");
+      }
+    }
+
+    var toggleInputs = function(){
+      console.log("Toggling inputs");
+      apikeyTextObj.disabled === true ? apikeyTextObj.disabled = false : apikeyTextObj.disabled = true;;
+      apikeyButtonObj.disabled === true ? apikeyButtonObj.disabled = false : apikeyButtonObj.disabled = true;;
+    }
+
+    var displayServerInfo = function(){
+      serverInfoObj.style.display = 'block';
+    }
+
+    var getRTT = function() {
+      rttInterval = setInterval(function() {
+        APIdazeClientObj.ping(function(rtt){
+          rttObj.innerHTML = rtt;
+          if (rtt <= 50) {
+            rttAppreciationObj.innerHTML = "(good)";
+          } else if (rtt <= 100) {
+            rttAppreciationObj.innerHTML = "(that's ok)";
+          } else if (rtt <= 150) {
+            rttAppreciationObj.innerHTML = "(not bad)";
+          } else if (rtt <= 200) {
+            rttAppreciationObj.innerHTML = "(not good)";
+          } else {
+            rttAppreciationObj.innerHTML = "(too high)";
+          }
+        });
+      }, 2000);
+    }
+
+  </script>
+</html>
