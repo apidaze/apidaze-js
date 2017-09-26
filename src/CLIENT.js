@@ -13,6 +13,7 @@ var CLIENT = function(configuration = {}){
   let {
     apiKey,
     wsurl,
+    forcewsurl,
     sessid = null,
     onReady,
     onDisconnected,
@@ -24,6 +25,8 @@ var CLIENT = function(configuration = {}){
   this.speedTest = speedTest.bind(this);
   this.ping = ping.bind(this);
   this.shutdown = shutdown.bind(this);
+  this.freeAll = shutdown.bind(this); // freeAll is kept for compatibility reasons
+  this.disconnect = shutdown.bind(this); // disconnect is kept for compatibility reasons
 
   // User defined handlers
   this._onDisconnected = function(){
@@ -62,6 +65,10 @@ var CLIENT = function(configuration = {}){
 
   if (!"WebSocket" in window) {
     this._onError({origin: "CLIENT", message: "WebSocket not supported"})
+  }
+
+  if (/wss:\/\//.test(forcewsurl)) {
+    wsurl = forcewsurl;
   }
 
   if (!/wss:\/\//.test(wsurl)) {
@@ -531,6 +538,10 @@ const handleEchoReply = function(event) {
 }
 
 const shutdown = function() {
+  if (this._websocket === null) {
+    return;
+  }
+
   this._websocket.close();
   this._websocket = null;
 }
