@@ -1,0 +1,2 @@
+## APIdaze JavaScript sample codes
+
