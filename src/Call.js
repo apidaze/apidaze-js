@@ -99,6 +99,9 @@ var Call = function(clientObj, callID, params, listeners){
   this.unmuteInConference = unmuteInConference;
   this.muteInConference = muteInConference;
   this.kickFromConference = kickFromConference;
+  this.modify = modify;
+  this.dualTransfer = dualTransfer;
+  this.transferBleg = transferBleg;
   this.hangup = hangup;
   this.sendText = sendText;
   this.stopLocalAudio = stopLocalAudio;
@@ -308,6 +311,76 @@ function kickFromConference(conferenceMemberID){
     action: "kickFromConference",
     destination: roomName,
     conferenceMemberID: conferenceMemberID
+  };
+
+  this.clientObj._sendMessage(JSON.stringify(request));
+};
+
+function modify(action, destination) {
+  LOGGER.log(LOG_PREFIX, "Modifying call (", action, ") with id :", this.callID);
+  var request = {};
+  request.wsp_version = "1";
+  request.method = "modify";
+  switch(action) {
+    case "hold":
+      request.params = {
+        callID: this.callID,
+        action: action
+      };
+      break;
+    case "unhold":
+      request.params = {
+        callID: this.callID,
+        action: action
+      };
+      break;
+    case "toggleHold":
+      request.params = {
+        callID: this.callID,
+        action: action
+      };
+      break;
+    case "conference":
+      request.params = {
+        callID: this.callID,
+        action: action,
+        destination: destination
+      };
+      break;
+    default:
+      LOGGER.log(LOG_PREFIX, "Unknown action", action, "Returning.");
+      return;
+  }
+
+  this.clientObj._sendMessage(JSON.stringify(request));
+};
+
+function dualTransfer(aleg_exten, bleg_exten){
+  LOGGER.log(LOG_PREFIX, "dualTransfer called, aleg_exten :", aleg_exten, "bleg_exten :", bleg_exten);
+  LOGGER.log(LOG_PREFIX, "this.callID :", this.callID);
+  var request = {};
+  request.wsp_version = "1";
+  request.method = "modify";
+  request.params = {
+    callID: this.callID,
+    action: "dualTransfer",
+    aleg_exten: aleg_exten,
+    bleg_exten: bleg_exten
+  };
+
+  this.clientObj._sendMessage(JSON.stringify(request));
+};
+
+function transferBleg(exten){
+  LOGGER.log(LOG_PREFIX, "transferBleg called, exten : ", exten);
+  LOGGER.log(LOG_PREFIX, "this.callID : ", this.callID);
+  var request = {};
+  request.wsp_version = "1";
+  request.method = "modify";
+  request.params = {
+    callID: this.callID,
+    action: "transferBleg",
+    exten: exten
   };
 
   this.clientObj._sendMessage(JSON.stringify(request));
