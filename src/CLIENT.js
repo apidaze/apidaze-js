@@ -22,11 +22,16 @@ var CLIENT = function(configuration = {}){
     userKeys = {}
   } = configuration;
 
+
+  /**
+  * Functions exposed to user
+  */
   this.speedTest = speedTest.bind(this);
   this.ping = ping.bind(this);
   this.shutdown = shutdown.bind(this);
   this.freeAll = shutdown.bind(this); // freeAll is kept for compatibility reasons
   this.disconnect = shutdown.bind(this); // disconnect is kept for compatibility reasons
+  this.sendText = sendText.bind(this);
 
   // User defined handlers
   this._onDisconnected = function(){
@@ -544,6 +549,22 @@ const shutdown = function() {
 
   this._websocket.close();
   this._websocket = null;
+}
+
+const sendText = function({text, userKeys = {}}){
+  var text = text;
+  var userKeys = typeof userKeys !== "object" ? {} : userKeys;
+
+  var request = {};
+
+  request.wsp_version = "1";
+  request.method = "verto.info";
+  request.params = {
+    text: text,
+    userKeys: userKeys
+  };
+
+  this._sendMessage(JSON.stringify(request));
 }
 
 const speedTest = function (userCallback, bytes = 1024*256) {
