@@ -7,7 +7,7 @@ To run those samples locally, go to the root directory and :
     npm install
     npm start
 
-Open your broswer at `http://localhost:9000/`
+Open your browser at `http://localhost:9000/`
 
 ### Source code
 
