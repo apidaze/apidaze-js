@@ -8,7 +8,7 @@ will be used in the various examples.
     npm install
     npm start
 
-Open your brower at `http://localhost:9000/`
+Open your broswer at `http://localhost:9000/`
 
 # Add to your JavaScript application
 
