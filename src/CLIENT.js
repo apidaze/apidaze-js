@@ -205,6 +205,12 @@ const handleWebSocketMessage = function(event){
     return;
   }
 
+  // Handle replies from our sendText function
+  if (json.result && json.result.type === "sendtext_request"){
+    handleSendTextReply.call(this, json);
+    return;
+  }
+
   // Handle response to our initial 'subscribe_message' request
   if (/^subscribe_message/.test(json.id)){
     let callID = json.id.split('|')[1];
@@ -542,6 +548,18 @@ const handleEchoReply = function(event) {
   }
 }
 
+const handleSendTextReply = function(event) {
+  LOGGER.log("handleSendTextReply", JSON.stringify(event));
+
+  if (typeof this._sendTextCallback === "function") {
+    this._sendTextCallback({
+      ok: event.result.ok,
+      message: event.result.message
+    });
+    this._sendTextCallback = null;
+  }
+}
+
 const shutdown = function() {
   if (this._websocket === null) {
     return;
@@ -551,15 +569,18 @@ const shutdown = function() {
   this._websocket = null;
 }
 
-const sendText = function({text, userKeys = {}}){
+const sendText = function({text, userKeys = {}}, userCallback){
   var text = text;
   var userKeys = typeof userKeys !== "object" ? {} : userKeys;
+
+  this._sendTextCallback = userCallback;
 
   var request = {};
 
   request.wsp_version = "1";
   request.method = "verto.info";
   request.params = {
+    type: "sendtext_request",
     text: text,
     userKeys: userKeys
   };
