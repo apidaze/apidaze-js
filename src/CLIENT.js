@@ -18,6 +18,7 @@ var CLIENT = function(configuration = {}){
     onReady,
     onDisconnected,
     onError,
+    onExternalMessageReceived,
     debug,
     userKeys = {}
   } = configuration;
@@ -56,6 +57,10 @@ var CLIENT = function(configuration = {}){
       throw {ok: false, message: errorObj.message, origin: errorObj.origin}
     }
   };
+  this._onExternalMessageReceived = function(messageObject){
+    // messageObject : {from, to, body}
+    typeof onExternalMessageReceived === "function" && onExternalMessageReceived(messageObject);
+  }
 
   if (debug) {
     this.debug = true;
@@ -294,6 +299,13 @@ const handleWebSocketMessage = function(event){
     return;
   }
 
+  if (json.method === "verto.info"){
+    // Handle unsollicited text messages, received even when we're not in a call
+    LOGGER.log("Received message from server", JSON.stringify(json.params.msg));
+    this._onExternalMessageReceived(json.params.msg);
+    return;
+  }
+
   let callID = json.params.callID;
   let index = this._callArray.findIndex(function(callObj){
     return callObj.callID === callID;
@@ -351,6 +363,7 @@ const handleWebSocketMessage = function(event){
     LOGGER.log("Re-attaching to call with ID : " + callID);
     LOGGER.log("Call index is " + (index < 0) ? "OK" : "Not OK");
     this._reattachParams = json.params;
+    break;
 
     default:
     LOGGER.log("No action for this message");
