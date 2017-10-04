@@ -17,5 +17,5 @@ In the examples given hereafter, an <code>API key</code> is required. It is assu
 - [apikey_check/index.html](apikey_check/index.html)
 - [apikey_check_and_login/index.html](apikey_check_and_login/index.html)
 - [rtt_to_server/index.html](rtt_to_server/index.html)
-- [send_text/index.html][send_text/index.html]
-- [receive_text/index.html][receive_text/index.html]
+- [send_text/index.html](send_text/index.html)
+- [receive_text/index.html](receive_text/index.html)
