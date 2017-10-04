@@ -64,8 +64,7 @@
           userKeys: userKeys,
           onReady: function(sessionObj) {
             connectResultObj.innerHTML = "Logged in as " + sessionObj.id + " ! You may try to send a message by issuing the following cURL command :";
-            infoTextObj.innerHTML = "curl -X POST 'https://api4.apidaze.io/" +
-            apikeyTextObj.value + "/chat/send' --data 'api_secret=YOURAPISECRET&from=me&to=" + sessionObj.id + "&ws_server=ws2-dev-fr-par-1.apidaze.io&text=Hello'";
+            infoTextObj.innerHTML = "curl -X POST 'https://api4.apidaze.io/" + apikeyTextObj.value + "/chat/send' --data 'api_secret=YOURAPISECRET&from=me&to=" + sessionObj.id + "&ws_server=ws2-dev-fr-par-1.apidaze.io&text=Hello'";
             toggleInputs();
           },
           onError: function(errorMessage){
