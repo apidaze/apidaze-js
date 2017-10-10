@@ -12,9 +12,7 @@ const isWebRTCSupported = function() {
           typeof WebRTCAdapter.browserShim === "object";
 }
 
-const browserDetails = function() {
-  return WebRTCAdapter.browserDetails;
-}
+const browserDetails = WebRTCAdapter.browserDetails;
 
 export {
   version,
