@@ -28,6 +28,8 @@ module.exports = {
   devServer: {
     contentBase: path.join(__dirname, "samples"),
     compress: true,
+    host: "0.0.0.0",
+    disableHostCheck: true,
     port: 9000
   },
   plugins: [
