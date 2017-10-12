@@ -131,7 +131,7 @@ CLIENT.prototype.call = function(params, listeners = {}){
   }
 }
 
-CLIENT.prototype.reattach = function(callID, params, listeners = {}){
+CLIENT.prototype.reattach = function(callID, params = {}, listeners = {}){
   try {
     var callObj = new Call(this, callID, params, listeners);
     this._callArray.push(callObj);
