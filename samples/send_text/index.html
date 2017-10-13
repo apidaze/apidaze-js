@@ -12,6 +12,9 @@
         to your External Script.
       </h3>
       <p>
+        Console version : <a href="./console.html">console.html</a>
+      </p>
+      <p>
         APIdaze will send the text to your External Script. Use this method if you
         want to forward text from a webpage (e.g. : a chat window), to backend
         accessible resources like SMS or internal Slack channels for instance!
@@ -37,6 +40,8 @@
         function(event) {
           // event.ok : true or false
           // event.message : text message received as a result
+          // event.content : content received from your External Script as string
+          // event.data : JSON data received from your External Script
         }
         </pre>
       </p>
@@ -69,10 +74,10 @@
           debug: true,
           onReady: function() {
             APIdazeClientObj.sendText({
-              text: sendTextButtonObj.value
+              text: textToSendObj.value
             },
             function(event){
-              alert(JSON.stringify(event));
+              alert(JSON.stringify(event, null, 4));
             });
             toggleInputs();
           },

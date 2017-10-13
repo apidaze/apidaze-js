@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <title>Sample App</title>
+  </head>
+  <body>
+    <pre>
+/**
+* Run in your JavaScript console.
+*
+* To run this example, open your JavaScript console, paste the JavaScript code
+* hereafter and replace the variables where necessary.
+*/
+
+var apiKey = "YOUR_API_KEY";
+var wsurl = "wss://ws2-dev-fr-par-1.apidaze.io";
+var userid = "johndoe";
+
+var APIdazeClientObj = new APIdaze.CLIENT({
+  apiKey: apiKey,
+  wsurl: wsurl,
+  debug: true,
+  userKeys: {
+    command: "auth",
+    userid: userid
+  },
+  onReady: function(sessionObj) {
+    alert("Logged in as " + sessionObj.id + " !");
+  },
+  onError: function(errorMessage){
+    alert("Got error : " + errorMessage);
+  }
+});
+    </pre>
+    <script type="text/javascript" src="../APIdaze-2.0.0-dev-master.js"></script>
+  </body>
+</html>

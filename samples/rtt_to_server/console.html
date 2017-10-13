@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <title>Sample App</title>
+  </head>
+  <body>
+    <pre>
+/**
+* Run in your JavaScript console.
+*
+* To run this example, open your JavaScript console, paste the JavaScript code
+* hereafter and replace the variables where necessary.
+*/
+
+var apiKey = "YOUR_API_KEY";
+var wsurl = "wss://ws2-dev-fr-par-1.apidaze.io";
+var rttInterval = null;
+
+var stopRTT = function() {
+  clearInterval(rttInterval);
+}
+
+var startRTT = function() {
+  rttInterval = setInterval(function() {
+    APIdazeClientObj.ping(function(rtt){
+      if (rtt <= 50) {
+        console.log(rtt + " ms (good), type stopRTT() to stop, startRTT() to restart");
+      } else if (rtt <= 100) {
+        console.log(rtt + " ms (that's ok), type stopRTT() to stop, startRTT() to restart");
+      } else if (rtt <= 150) {
+        console.log(rtt + " ms (not bad), type stopRTT() to stop, startRTT() to restart");
+      } else if (rtt <= 200) {
+        console.log(rtt + " ms (not good), type stopRTT() to stop, startRTT() to restart");
+      } else {
+        console.log(rtt + " ms (too high), type stopRTT() to stop, startRTT() to restart");
+      }
+    });
+  }, 2000);
+}
+
+var APIdazeClientObj = new APIdaze.CLIENT({
+  apiKey: apiKey,
+  wsurl: wsurl,
+  debug: true,
+  onReady: function() {
+    startRTT();
+  },
+  onError: function(errorMessage){
+    alert("Got error : " + errorMessage);
+  }
+});
+    </pre>
+    <script type="text/javascript" src="../APIdaze-2.0.0-dev-master.js"></script>
+  </body>
+</html>
