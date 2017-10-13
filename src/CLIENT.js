@@ -202,6 +202,12 @@ const handleWebSocketMessage = function(event){
       this._onError({type: "async", origin: "CLIENT", message: "Not allowed to login"})
       return;
     }
+
+    if (json.error.code === -32002) {
+      LOGGER.log("Session error");
+      this._onError({type: "async", origin: "CLIENT", message: json.error.message})
+      return;
+    }
   }
 
   // Handle echo reply to our echo request
@@ -566,8 +572,10 @@ const handleSendTextReply = function(event) {
 
   if (typeof this._sendTextCallback === "function") {
     this._sendTextCallback({
+      httpCode: event.result.httpCode || null,
       ok: event.result.ok,
-      message: event.result.message
+      message: event.result.message,
+      data: event.result.data || null
     });
     this._sendTextCallback = null;
   }
