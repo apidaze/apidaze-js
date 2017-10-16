@@ -7,6 +7,8 @@ var __VERSION__ = process.env.VERSIONSTR // webpack defineplugin variable
 var LOG_PREFIX = 'APIdaze-' + __VERSION__ + ' | CLIENT | Call |' ;
 var LOGGER = new Logger(false, LOG_PREFIX);
 
+var APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID = "ecomagggebppeikobjchgmnoldifjnjj";
+
 /**
 * The callID parameter is expected to be null, except when clientObj is
 * re-attaching to an existing call in FreeSWITCH
@@ -29,10 +31,19 @@ var Call = function(clientObj, callID, params, listeners){
   var {
     activateAudio = true,
     activateVideo = false,
-    videoParams = {},
+    videoParams = {
+      activateScreenShare: false
+    },
+    tagId = 'apidaze-audio-video-container-id',
     audioParams = {},
     userKeys
   } = params;
+
+  if (videoParams.activateScreenShare === true) {
+    if (typeof videoParams.screenShareParams === "undefined") {
+      videoParams.screenShareParams = {};
+    }
+  }
 
   var {
     onRinging,
@@ -56,6 +67,8 @@ var Call = function(clientObj, callID, params, listeners){
   this.videoParams = videoParams;
   this.audioParams = audioParams;
 
+  var audioVideoDOMContainerObj = document.getElementById(tagId);
+
   this.remoteAudioVideo = document.createElement("video");
   this.remoteAudioVideo.autoplay = "autoplay";
   this.remoteAudioVideo.controls = "controls";
@@ -63,7 +76,11 @@ var Call = function(clientObj, callID, params, listeners){
     this.remoteAudioVideo.style.display = "none";
   }
 
-  document.body.appendChild(this.remoteAudioVideo);
+  if (audioVideoDOMContainerObj !== null) {
+    audioVideoDOMContainerObj(this.remoteAudioVideo);
+  } else {
+    document.body.appendChild(this.remoteAudioVideo);
+  }
 
   this.localAudioVideoStream = null;
   this.peerConnection = null;
@@ -141,7 +158,62 @@ var Call = function(clientObj, callID, params, listeners){
   LOGGER.log("GUM constraints : " + JSON.stringify(GUMConstraints));
 
   let self = this;
-  navigator.mediaDevices.getUserMedia(GUMConstraints).then(function(stream){
+
+  if (this.activateVideo === true && this.videoParams.activateScreenShare === true) {
+    let request = { sources: ['window', 'screen', 'tab'] };
+    var chrome_extension_id = this.videoParams.screenShareParams.extensionID || APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID;
+
+    if (chrome_extension_id === APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID) {
+      LOGGER.log("Using APIdaze Chrome extension for screen sharing");
+    } else {
+      LOGGER.log("Using custom Chrome extension for screen sharing :", chrome_extension_id);
+    }
+
+    chrome.runtime.sendMessage(chrome_extension_id, request, response => {
+      if (response && response.type === 'success') {
+
+        var screenSchareConstraints = {
+          video : {
+            mandatory : {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: response.streamId
+            }
+          }
+        }
+
+        navigator.mediaDevices.getUserMedia(screenSchareConstraints)
+        .then(screenShareStream => {
+          navigator.mediaDevices.getUserMedia(GUMConstraints)
+          .then(function(audioStream){
+            LOGGER.log("Got media for Screen Sharing");
+            var audioTrack = audioStream.getAudioTracks()[0];
+            screenShareStream.addTrack(audioTrack);
+
+            handleGUMSuccess.call(self, screenShareStream);
+            createPeerConnection.call(self);
+            attachStreamToPeerConnection.call(self);
+            if (self.callID === null){
+              LOGGER.log("No callID, calling createOffer")
+              createOffer.call(self);
+            } else {
+              LOGGER.log("We have a callID, setting remote desc on peerConnection")
+              createAnswer.call(self);
+            }
+          })
+          .catch(function(error){
+            handleGUMError.call(self, error);
+          });
+        })
+        .catch(err => {
+          console.error('Could not get stream: ', err);
+        });
+      } else {
+        console.error('Could not get stream');
+      }
+    });
+  } else {
+    navigator.mediaDevices.getUserMedia(GUMConstraints)
+    .then(function(stream){
       handleGUMSuccess.call(self, stream);
       createPeerConnection.call(self);
       attachStreamToPeerConnection.call(self);
@@ -156,6 +228,7 @@ var Call = function(clientObj, callID, params, listeners){
     .catch(function(error){
       handleGUMError.call(self, error);
     });
+  }
 }
 
 function stopLocalAudio(){
