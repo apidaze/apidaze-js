@@ -34,7 +34,7 @@ var Call = function(clientObj, callID, params, listeners){
     videoParams = {
       activateScreenShare: false
     },
-    tagId = 'apidaze-audio-video-container-id',
+    tagId = 'apidaze-audio-video-container-id-' + callID,
     audioParams = {},
     userKeys
   } = params;
@@ -66,6 +66,7 @@ var Call = function(clientObj, callID, params, listeners){
   this.activateAudio = activateAudio;
   this.videoParams = videoParams;
   this.audioParams = audioParams;
+  this.audioVideoTagId = tagId;
 
   var audioVideoDOMContainerObj = document.getElementById(tagId);
 
@@ -200,6 +201,7 @@ var Call = function(clientObj, callID, params, listeners){
             handleGUMSuccess.call(self, screenShareStream);
             createPeerConnection.call(self);
             attachStreamToPeerConnection.call(self);
+
             if (self.callID === null){
               LOGGER.log("No callID, calling createOffer")
               createOffer.call(self);
@@ -686,6 +688,11 @@ function handleHangup(){
       track.stop();
     }
   );
+
+  let audioVideoDOMContainerObj = document.getElementById(this.audioVideoTagId);
+  if (audioVideoDOMContainerObj) {
+    audioVideoDOMContainerObj.parentNode.removeChild(audioVideoDOMContainerObj);
+  }
 
   this.peerConnection.close();
   this.remoteAudioVideo = null;
