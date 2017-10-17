@@ -200,15 +200,15 @@ var Call = function(clientObj, callID, params, listeners){
               createAnswer.call(self);
             }
           })
-          .catch(function(error){
+          .catch(error => {
             handleGUMError.call(self, error);
           });
         })
-        .catch(err => {
-          console.error('Could not get stream: ', err);
+        .catch(error => {
+          handleGUMError.call(self, error);
         });
       } else {
-        console.error('Could not get stream');
+        handleGUMError.call(self, "Failed to get Screen Share extension response");
       }
     });
   } else {
@@ -761,7 +761,8 @@ function handleGUMSuccess(stream){
 }
 
 function handleGUMError(error){
-  throw JSON.stringify(error);
+  LOGGER.log("Failed to get local media device (camera, mic, screen)");
+  this.clientObj._onError({origin: "call", message: "Failed to get local media device (camera, mic, screen) : " + error.name});
 }
 
 export default Call;
