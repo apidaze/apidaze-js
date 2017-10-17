@@ -71,15 +71,23 @@ var Call = function(clientObj, callID, params, listeners){
 
   this.remoteAudioVideo = document.createElement("video");
   this.remoteAudioVideo.autoplay = "autoplay";
-  this.remoteAudioVideo.controls = "controls";
+  this.remoteAudioVideo.controls = false;
   if (activateVideo === false){
     this.remoteAudioVideo.style.display = "none";
   }
 
-  if (audioVideoDOMContainerObj !== null) {
-    audioVideoDOMContainerObj(this.remoteAudioVideo);
+  if (audioVideoDOMContainerObj == null) {
+    LOGGER.log("Inserting HTML5 <video/> element " + (this.activateAudio ?
+    "(video on) " : "(video off) ") + "to APIdaze tag " + tagId);
+    var audioVideoDOMContainerObj = document.createElement("div");
+    audioVideoDOMContainerObj.id = tagId;
+    audioVideoDOMContainerObj.appendChild(this.remoteAudioVideo);
+
+    document.body.appendChild(audioVideoDOMContainerObj);
   } else {
-    document.body.appendChild(this.remoteAudioVideo);
+    LOGGER.log("Inserting HTML5 <video/> element " + (this.activateAudio ?
+    "(video on) " : "(video off) ") + "to user provided tag " + tagId);
+    audioVideoDOMContainerObj.appendChild(this.remoteAudioVideo);
   }
 
   this.localAudioVideoStream = null;
