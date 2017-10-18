@@ -28,13 +28,15 @@ var Call = function(clientObj, callID, params, listeners){
   *  bestFrameRate: 30,
   */
 
+  let randomString = (function() {for(var c = ''; c.length < 12;) c += Math.random().toString(36).substr(2, 1); return c})();
+
   var {
     activateAudio = true,
     activateVideo = false,
     videoParams = {
       activateScreenShare: false
     },
-    tagId = 'apidaze-audio-video-container-id-' + callID,
+    tagId = 'apidaze-audio-video-container-id-' + randomString,
     audioParams = {},
     userKeys
   } = params;
