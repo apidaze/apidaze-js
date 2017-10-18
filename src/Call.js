@@ -91,6 +91,7 @@ var Call = function(clientObj, callID, params, listeners){
     audioVideoDOMContainerObj.appendChild(this.remoteAudioVideo);
   }
 
+  this.extraLocalAudioVideoStream = null;
   this.localAudioVideoStream = null;
   this.peerConnection = null;
   this.callID = callID;
@@ -199,6 +200,10 @@ var Call = function(clientObj, callID, params, listeners){
             screenShareStream.addTrack(audioTrack);
 
             handleGUMSuccess.call(self, screenShareStream);
+
+            // We keep track of this extra local stream in order to close it
+            // properly when the call ends
+            self.extraLocalAudioVideoStream = audioStream;
             createPeerConnection.call(self);
             attachStreamToPeerConnection.call(self);
 
@@ -682,6 +687,15 @@ function startCall(){
 function handleHangup(){
   LOGGER.log("Call hungup");
   let self = this;
+
+  if (this.extraLocalAudioVideoStream && this.extraLocalAudioVideoStream.active === true) {
+    LOGGER.log("We have an extra MediaStream, probably because we are sharing the screen, let's close it")
+    this.extraLocalAudioVideoStream.getTracks().forEach(
+      function(track) {
+        track.stop();
+      }
+    );
+  }
 
   this.localAudioVideoStream.getTracks().forEach(
     function(track) {
