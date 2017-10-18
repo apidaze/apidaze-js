@@ -508,11 +508,23 @@ const handleSubscribeFromVerto = function(event, callID){
   * - chatChannel : chat messages
   * - infoChannel : info ?
   */
-  this._callArray[index].subscribedChannels = {}
-  this._callArray[index].subscribedChannels.laChannel = event.result.subscribedChannels[0];
-  this._callArray[index].subscribedChannels.chatChannel = event.result.subscribedChannels[1];
-  this._callArray[index].subscribedChannels.infoChannel = event.result.subscribedChannels[2];
-  this._callArray[index].subscribedChannelsArray = event.result.subscribedChannels;
+  this._callArray[index].subscribedChannels = {};
+  let channelsArray = [];
+
+  if (event.result.subscribedChannels.length === 3){
+    LOGGER.log("Found valid subscribedChannels[] array");
+    channelsArray = event.result.subscribedChannels;
+
+  } else if (event.result.alreadySubscribedChannels.length === 3){
+    LOGGER.log("Found valid alreadySubscribedChannels[] array");
+    channelsArray = event.result.alreadySubscribedChannels;
+  }
+
+  this._callArray[index].subscribedChannels.laChannel = channelsArray[0];
+  this._callArray[index].subscribedChannels.chatChannel = channelsArray[1];
+  this._callArray[index].subscribedChannels.infoChannel = channelsArray[2];
+  this._callArray[index].subscribedChannelsArray = channelsArray;
+
 }
 
 /**
