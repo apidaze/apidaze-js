@@ -234,8 +234,13 @@ var Call = function(clientObj, callID, params, listeners){
         return self.peerConnection.setLocalDescription(offer);
       })
       .then(function(){
-        LOGGER.log("Let's start the call");
-        startCall.call(self);
+        /**
+        * Regular WebRTC examples show that the right spot to send the SDP
+        * to the server is here. We cannot do that because our WebRTC remote
+        * peer (FreeSWITCH) does not handle Trickle ICE and needs to get
+        * all the candidates in the first offer
+        */
+        LOGGER.log("WebRTC set up, ready to start call");
       })
       .catch(function(error){
         LOGGER.log("Error :", error);
@@ -271,8 +276,13 @@ var Call = function(clientObj, callID, params, listeners){
       return self.peerConnection.setLocalDescription(offer);
     })
     .then(function(){
-      LOGGER.log("Let's start the call");
-      startCall.call(self);
+      /**
+      * Regular WebRTC examples show that the right spot to send the SDP
+      * to the server is here. We cannot do that because our WebRTC remote
+      * peer (FreeSWITCH) does not handle Trickle ICE and needs to get
+      * all the candidates in the first offer
+      */
+      LOGGER.log("WebRTC set up, ready to start call");
     })
     .catch(function(error){
       LOGGER.log("Error :", error);
@@ -653,6 +663,7 @@ function createPeerConnection(){
     } else if (!('onicegatheringstatechange' in RTCPeerConnection.prototype)) {
       // should not be done if its done in the icegatheringstatechange callback.
       LOGGER.log("Got all our ICE candidates, thanks!");
+      startCall.call(self);
     }
   }
   this.peerConnection.oniceconnectionstatechange = function(event){
@@ -670,6 +681,7 @@ function createPeerConnection(){
       return;
     }
     LOGGER.log("Got all our ICE candidates (from onicegatheringstatechange), thanks!");
+    startCall.call(self);
   }
 }
 
