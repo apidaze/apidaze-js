@@ -195,6 +195,51 @@ var Call = function(clientObj, callID, params, listeners){
 
         navigator.mediaDevices.getUserMedia(screenSchareConstraints)
         .then(screenShareStream => {
+          self.localAudioVideoStream = screenShareStream;
+          return navigator.mediaDevices.getUserMedia(GUMConstraints);
+        })
+        .then(audioStream => {
+          // Now add the first audio track to our previously created
+          // MediaStream for ScreenShare
+          var audioTrack = audioStream.getAudioTracks()[0];
+
+          self.localAudioVideoStream.addTrack(audioTrack);
+
+          // We keep track of this extra local stream in order to close it
+          // properly when the call ends
+          self.extraLocalAudioVideoStream = audioStream;
+
+        })
+        .then(function (){
+          createPeerConnection.call(self);
+        })
+        .then(function () {
+          attachStreamToPeerConnection.call(self);
+
+          var offerOptions = {
+              offerToReceiveAudio: 1,
+              offerToReceiveVideo: 1
+            };
+
+          return self.peerConnection.createOffer(offerOptions);
+        })
+        .then(function(offer){
+          LOGGER.log("Local SDP : " + offer.sdp);
+          LOGGER.log("Setting description to local peerConnection");
+          return self.peerConnection.setLocalDescription(offer);
+        })
+        .then(function(){
+          LOGGER.log("Let's start the call");
+          startCall.call(self);
+        })
+        .catch(function(error){
+          LOGGER.log("Error :", error);
+          handleGUMError.call(self, error);
+        });
+
+/*
+        navigator.mediaDevices.getUserMedia(screenSchareConstraints)
+        .then(screenShareStream => {
           navigator.mediaDevices.getUserMedia(GUMConstraints)
           .then(function(audioStream){
             LOGGER.log("Got media for Screen Sharing");
@@ -224,25 +269,45 @@ var Call = function(clientObj, callID, params, listeners){
         .catch(error => {
           handleGUMError.call(self, error);
         });
+        */
       } else {
         handleGUMError.call(self, "Failed to get Screen Share extension response");
       }
     });
   } else {
-    navigator.mediaDevices.getUserMedia(GUMConstraints)
+    navigator.mediaDevices.enumerateDevices()
+    .then(function (devices) {
+      LOGGER.log("Found devices : ", devices);
+      return navigator.mediaDevices.getUserMedia(GUMConstraints);
+    })
     .then(function(stream){
-      handleGUMSuccess.call(self, stream);
+      LOGGER.log("WebRTC Ok");
+      self.localAudioVideoStream = stream;
+    })
+    .then(function (){
       createPeerConnection.call(self);
+    })
+    .then(function () {
       attachStreamToPeerConnection.call(self);
-      if (self.callID === null){
-        LOGGER.log("No callID, calling createOffer")
-        createOffer.call(self);
-      } else {
-        LOGGER.log("We have a callID, setting remote desc on peerConnection")
-        createAnswer.call(self);
-      }
+
+      var offerOptions = {
+          offerToReceiveAudio: 1,
+          offerToReceiveVideo: 1
+        };
+
+      return self.peerConnection.createOffer(offerOptions);
+    })
+    .then(function(offer){
+      LOGGER.log("Local SDP : " + offer.sdp);
+      LOGGER.log("Setting description to local peerConnection");
+      return self.peerConnection.setLocalDescription(offer);
+    })
+    .then(function(){
+      LOGGER.log("Let's start the call");
+      startCall.call(self);
     })
     .catch(function(error){
+      LOGGER.log("Error :", error);
       handleGUMError.call(self, error);
     });
   }
@@ -572,31 +637,6 @@ function createAnswer(){
     })
 }
 
-/**
-* This function starts the ICE gathering process
-*/
-function createOffer(){
-  var offerOptions = {
-    offerToReceiveAudio: 1,
-    offerToReceiveVideo: 1
-  };
-
-  var self = this;
-
-  this.peerConnection.createOffer(
-    offerOptions
-  ).then(
-    function(desc){
-      LOGGER.log("Local SDP : " + desc.sdp);
-      LOGGER.log("Setting description to local peerConnection");
-      self.peerConnection.setLocalDescription(desc);
-    },
-    function(error){
-      throw JSON.stringify(error);
-    }
-  );
-}
-
 function attachStreamToPeerConnection(){
   let self = this;
   this.localAudioVideoStream.getTracks().forEach(
@@ -644,8 +684,7 @@ function createPeerConnection(){
       LOGGER.log("ICE candidate received: " + event.candidate.candidate);
     } else if (!('onicegatheringstatechange' in RTCPeerConnection.prototype)) {
       // should not be done if its done in the icegatheringstatechange callback.
-      LOGGER.log("Got ICE candidates, start call...");
-      startCall.call(self);
+      LOGGER.log("Got all our ICE candidates, thanks!");
     }
   }
   this.peerConnection.oniceconnectionstatechange = function(event){
@@ -662,13 +701,16 @@ function createPeerConnection(){
     if (self.peerConnection.iceGatheringState !== 'complete') {
       return;
     }
-    LOGGER.log("Got ICE candidates (from onicegatheringstatechange), start call...");
-    startCall.call(self);
+    LOGGER.log("Got all our ICE candidates (from onicegatheringstatechange), thanks!");
   }
 }
 
+/**
+* Starts call by sending our SDP to FreeSWITCH in a call or reattach message
+*/
 function startCall(){
-  var callID = this.reattach ? this.callID : Utils.generateGUID();
+  LOGGER.log("Sending message");
+   var callID = this.reattach ? this.callID : Utils.generateGUID();
   var request = {};
   request.wsp_version = "1";
   request.method = this.reattach ? "verto.attach" : "call";
