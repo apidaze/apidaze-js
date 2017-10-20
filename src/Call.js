@@ -181,98 +181,66 @@ var Call = function(clientObj, callID, params, listeners){
       LOGGER.log("Using custom Chrome extension for screen sharing :", chrome_extension_id);
     }
 
+    /**
+    * Send message to Chrome Extension and start WebRTC when we get an answer back
+    */
     chrome.runtime.sendMessage(chrome_extension_id, request, response => {
-      if (response && response.type === 'success') {
+      if (response.type !== 'success') {
+        this.clientObj._onError({origin: "call", message: "Failed to get an answer from Chrome extension (ScreenShare)"});
+        return;
+      }
 
-        var screenSchareConstraints = {
-          video : {
-            mandatory : {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: response.streamId
-            }
+      var screenSchareConstraints = {
+        video : {
+          mandatory : {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: response.streamId
           }
         }
-
-        navigator.mediaDevices.getUserMedia(screenSchareConstraints)
-        .then(screenShareStream => {
-          self.localAudioVideoStream = screenShareStream;
-          return navigator.mediaDevices.getUserMedia(GUMConstraints);
-        })
-        .then(audioStream => {
-          // Now add the first audio track to our previously created
-          // MediaStream for ScreenShare
-          var audioTrack = audioStream.getAudioTracks()[0];
-
-          self.localAudioVideoStream.addTrack(audioTrack);
-
-          // We keep track of this extra local stream in order to close it
-          // properly when the call ends
-          self.extraLocalAudioVideoStream = audioStream;
-
-        })
-        .then(function (){
-          createPeerConnection.call(self);
-        })
-        .then(function () {
-          attachStreamToPeerConnection.call(self);
-
-          var offerOptions = {
-              offerToReceiveAudio: 1,
-              offerToReceiveVideo: 1
-            };
-
-          return self.peerConnection.createOffer(offerOptions);
-        })
-        .then(function(offer){
-          LOGGER.log("Local SDP : " + offer.sdp);
-          LOGGER.log("Setting description to local peerConnection");
-          return self.peerConnection.setLocalDescription(offer);
-        })
-        .then(function(){
-          LOGGER.log("Let's start the call");
-          startCall.call(self);
-        })
-        .catch(function(error){
-          LOGGER.log("Error :", error);
-          handleGUMError.call(self, error);
-        });
-
-/*
-        navigator.mediaDevices.getUserMedia(screenSchareConstraints)
-        .then(screenShareStream => {
-          navigator.mediaDevices.getUserMedia(GUMConstraints)
-          .then(function(audioStream){
-            LOGGER.log("Got media for Screen Sharing");
-            var audioTrack = audioStream.getAudioTracks()[0];
-            screenShareStream.addTrack(audioTrack);
-
-            handleGUMSuccess.call(self, screenShareStream);
-
-            // We keep track of this extra local stream in order to close it
-            // properly when the call ends
-            self.extraLocalAudioVideoStream = audioStream;
-            createPeerConnection.call(self);
-            attachStreamToPeerConnection.call(self);
-
-            if (self.callID === null){
-              LOGGER.log("No callID, calling createOffer")
-              createOffer.call(self);
-            } else {
-              LOGGER.log("We have a callID, setting remote desc on peerConnection")
-              createAnswer.call(self);
-            }
-          })
-          .catch(error => {
-            handleGUMError.call(self, error);
-          });
-        })
-        .catch(error => {
-          handleGUMError.call(self, error);
-        });
-        */
-      } else {
-        handleGUMError.call(self, "Failed to get Screen Share extension response");
       }
+
+      navigator.mediaDevices.getUserMedia(screenSchareConstraints)
+      .then(screenShareStream => {
+        self.localAudioVideoStream = screenShareStream;
+        return navigator.mediaDevices.getUserMedia(GUMConstraints);
+      })
+      .then(audioStream => {
+        // Now add the first audio track to our previously created
+        // MediaStream for ScreenShare
+        var audioTrack = audioStream.getAudioTracks()[0];
+
+        self.localAudioVideoStream.addTrack(audioTrack);
+
+        // We keep track of this extra local stream in order to close it
+        // properly when the call ends
+        self.extraLocalAudioVideoStream = audioStream;
+      })
+      .then(function (){
+        createPeerConnection.call(self);
+      })
+      .then(function () {
+        attachStreamToPeerConnection.call(self);
+
+        var offerOptions = {
+            offerToReceiveAudio: 1,
+            offerToReceiveVideo: 1
+          };
+
+        return self.peerConnection.createOffer(offerOptions);
+      })
+      .then(function(offer){
+        LOGGER.log("Local SDP : " + offer.sdp);
+        LOGGER.log("Setting description to local peerConnection");
+        return self.peerConnection.setLocalDescription(offer);
+      })
+      .then(function(){
+        LOGGER.log("Let's start the call");
+        startCall.call(self);
+      })
+      .catch(function(error){
+        LOGGER.log("Error :", error);
+        handleGUMError.call(self, error);
+      });
     });
   } else {
     navigator.mediaDevices.enumerateDevices()
