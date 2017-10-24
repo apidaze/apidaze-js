@@ -16,12 +16,17 @@
   "devDependencies": {
     "babel-core": "^6.25.0",
     "babel-loader": "^7.1.1",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.24.1",
     "clean-webpack-plugin": "^0.1.16",
     "html-webpack-plugin": "^2.30.1",
+    "jsdom": "11.3.0",
+    "jsdom-global": "3.0.2",
     "rimraf": "^2.6.2",
     "webpack": "^3.4.1",
     "webpack-dev-server": "^2.6.1",
-    "webrtc-adapter": "^4.2.2"
+    "webrtc-adapter": "^4.2.2",
+    "ws": "^3.2.0"
   }
 }
