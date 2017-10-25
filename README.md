@@ -7,8 +7,8 @@ will be used in the various examples.
 
 Just clone the repository, install and start to test various examples locally
 
-    git clone https://github.com/apidaze/apidaze-js-2.git
-    cd apidaze-js-2
+    git clone https://github.com/apidaze/apidaze-js.git
+    cd apidaze-js
     npm install
     npm start
 
