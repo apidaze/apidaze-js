@@ -5,6 +5,10 @@ will be used in the various examples.
 
 # Run the examples locally
 
+Just clone the repository, install and start to test various examples locally
+
+    git clone https://github.com/apidaze/apidaze-js-2.git
+    cd apidaze-js-2
     npm install
     npm start
 
