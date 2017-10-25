@@ -81,7 +81,9 @@ var CLIENT = function(configuration = {}){
     wsurl = forcewsurl;
   }
 
-  if (!/wss:\/\//.test(wsurl)) {
+  // WebSocket URLs must start with wss:// or ws://localhost (the latter
+  // for testing purpose)
+  if (!/wss:\/\//.test(wsurl) && !/ws:\/\/localhost/.test(wsurl)) {
     this._onError({origin: "CLIENT", message: "Wrong WebSocket URL, must start with wss://"})
   }
 
@@ -102,7 +104,8 @@ CLIENT.prototype.version = __VERSION__
 
 CLIENT.prototype._sendMessage = function(json){
 
-  if (this._websocket.readyState !== this._websocket.OPEN){
+
+  if (this._websocket.readyState !== WebSocket.OPEN){
     this._onError({origin: "CLIENT", message: "Client is not ready (WebSocket not open)"});
     return;
   }
