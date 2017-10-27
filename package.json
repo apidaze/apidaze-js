@@ -6,7 +6,7 @@
   "scripts": {
     "build:npm": "rimraf ./lib && webpack --config webpack.config.npm.js --define process.env.NODE_ENV=\"production\"",
     "build:prod": "rimraf ./dist && webpack --config webpack.config.prod.js --define process.env.NODE_ENV=\"production\"",
-    "build:dev": "npm run clean && rimraf ./dist && webpack --config webpack.config.dev.js && (cd samples && ln -s ../dist) ",
+    "build:dev": "npm run clean && rimraf ./dist && webpack --config webpack.config.dev.js && (cd dist && ln -s APIdaze-$npm_package_version-dev-master.js APIdaze-latest-dev-master.js)",
     "start": "npm run build:dev && webpack-dev-server --hot --inline --config webpack.config.dev.js ",
     "clean": "rimraf ./dist && rimraf samples/dist",
     "test": "./node_modules/mocha/bin/mocha  --require jsdom-global/register --require babel-register tests/CLIENT.test.js"
