@@ -88,7 +88,7 @@ var CLIENT = function(configuration = {}){
   }
 
   this._callArray = [];
-  this._apiKey = apiKey;
+  this._apiKey = apiKey.toString();
   this._status = STATUS_INIT;
   this._sessid = sessid;
   this._userKeys = userKeys
