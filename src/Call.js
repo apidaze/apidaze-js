@@ -74,7 +74,7 @@ var Call = function(clientObj, callID, params, listeners){
 
   this.remoteAudioVideo = document.createElement("video");
   this.remoteAudioVideo.autoplay = "autoplay";
-  this.remoteAudioVideo.playsinline = "playsinline"; // Hack for Safari on iOS
+  this.remoteAudioVideo.setAttribute("playsinline", ""); // Hack for Safari on iOS
   this.remoteAudioVideo.controls = false;
   if (activateVideo === false){
     this.remoteAudioVideo.style.display = "none";
