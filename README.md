@@ -19,7 +19,7 @@ Then in your .js script
 
 Just add a `<script/>` tag to your HTML page like so :
 
-    <script src="https://api4.apidaze.io/javascript/releases/APIdaze-2.0.0-dev-master.js" />
+    <script src="https://api4.apidaze.io/javascript/releases/APIdaze-2.0.7.js" />
 
 # Usage
 
@@ -43,4 +43,4 @@ Open your browser at `http://localhost:9000/`
 
 # Add to your JavaScript application
 
-API can be downloaded at https://api4.apidaze.io/javascript/releases/APIdaze-2.0.0-dev-master.js
+API can be downloaded at https://api4.apidaze.io/javascript/releases/APIdaze-2.0.7.js
