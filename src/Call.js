@@ -74,7 +74,10 @@ var Call = function(clientObj, callID, params, listeners){
 
   this.remoteAudioVideo = document.createElement("video");
   this.remoteAudioVideo.autoplay = "autoplay";
-  this.remoteAudioVideo.setAttribute("playsinline", ""); // Hack for Safari on iOS
+
+  // Needed for Safari on iOS, see : https://github.com/webrtc/samples/issues/929
+  this.remoteAudioVideo.setAttribute("playsinline", "");
+
   this.remoteAudioVideo.controls = false;
   if (activateVideo === false){
     this.remoteAudioVideo.style.display = "none";
