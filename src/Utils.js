@@ -28,4 +28,14 @@ function() {
     });
 };
 
+/**
+ * Generates an unsigned 32 bits integer out of a string.
+ *
+ * Needed to map FreeSWITCH room name to Janus as Janus only accepts
+ * positive integers as room identifiers
+ */
+Utils.hashCode = function(s){
+  return s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);              
+}
+
 export default Utils
