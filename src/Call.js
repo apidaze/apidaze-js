@@ -10,6 +10,8 @@ var LOGGER = new Logger(false, LOG_PREFIX);
 
 var APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID = "ecomagggebppeikobjchgmnoldifjnjj";
 
+var myroom = 1234554321;
+
 /**
 * The callID parameter is expected to be null, except when clientObj is
 * re-attaching to an existing call in FreeSWITCH
@@ -70,6 +72,29 @@ var Call = function(clientObj, callID, params, listeners){
   this.videoParams = videoParams;
   this.audioParams = audioParams;
   this.audioVideoTagId = tagId;
+
+  /**
+  * Video attributes for this call
+  *
+  * Janus handles video in conference rooms. That is, a starts
+  * a conference room in FreeSWITCH in audio, and may afterwards
+  * 'upgrade' this conference to video using Janus. a second WebSocket
+  * that communicates with a Janus server is used and a new RTCPeerConnection
+  * is created to manage video.
+  *
+  * - janusInitOk is set to 'true' after Janus has been initiated using the
+  * 'startVideoInConference' function.
+  * - janusInstance is a instance of Janus, created after calling 'new Janus()'
+  * - janusVideoPlugin is the object that results of a success callback of the
+  *   janusInstance.attach() function (the plugHandle parameter)
+  * - janusVideoStream is user's local video stream
+  */
+  this.janusInitOk = false;
+  this.janusInstance = null;
+  this.janusVideoPlugin = null;
+  this.janusRemoteVideosPlugin = null;
+  this.janusVideoStream = null;
+  this.janusFeeds = [];
 
   var audioVideoDOMContainerObj = document.getElementById(tagId);
 
@@ -142,6 +167,7 @@ var Call = function(clientObj, callID, params, listeners){
   this.startLocalAudio = startLocalAudio;
   this.stopLocalVideo = stopLocalVideo;
   this.startLocalVideo = startLocalVideo;
+  this.startVideoInConference = startVideoInConference;
 
   if (this.clientObj._websocket.readyState !== this.clientObj._websocket.OPEN){
     throw {message: "WebSocket is closed"}
@@ -326,6 +352,431 @@ function startLocalVideo(){
       track.enabled = true;
     }
   );
+}
+
+function _publishOwnVideoFeed(useAudio) {
+	// Publish our stream
+  const self = this;
+
+	this.janusVideoPlugin.createOffer(
+		{
+			// Add data:true here if you want to publish datachannels as well
+			media: { audioRecv: false, videoRecv: false, audioSend: useAudio, videoSend: true },	// Publishers are sendonly
+			// If you want to test simulcasting (Chrome and Firefox only), then
+			// pass a ?simulcast=true when opening this demo page: it will turn
+			// the following 'simulcast' property to pass to janus.js to true
+			simulcast: false,
+			success: function(jsep) {
+				Janus.debug("Got publisher SDP!");
+				Janus.debug(jsep);
+				var publish = { "request": "configure", "audio": useAudio, "video": true };
+				// You can force a specific codec to use when publishing by using the
+				// audiocodec and videocodec properties, for instance:
+				// 		publish["audiocodec"] = "opus"
+				// to force Opus as the audio codec to use, or:
+				// 		publish["videocodec"] = "vp9"
+				// to force VP9 as the videocodec to use. In both case, though, forcing
+				// a codec will only work if: (1) the codec is actually in the SDP (and
+				// so the browser supports it), and (2) the codec is in the list of
+				// allowed codecs in a room. With respect to the point (2) above,
+				// refer to the text in janus.plugin.videoroom.cfg for more details
+				self.janusVideoPlugin.send({"message": publish, "jsep": jsep});
+			},
+			error: function(error) {
+				Janus.error("WebRTC error:", error);
+			}
+		});
+}
+
+function _attachJanusVideoPlugin(){
+  var self = this;
+
+  var opaqueId = "videoroomtest-123465464574746";
+  this.janusInstance.attach(
+    {
+      plugin: "janus.plugin.videoroom",
+      opaqueId: opaqueId,
+      success: function(pluginHandle) {
+        self.janusVideoPlugin = pluginHandle;
+        Janus.log("Plugin attached! (" + self.janusVideoPlugin.getPlugin() + ", id=" + self.janusVideoPlugin.getId() + ")");
+        Janus.log("  -- This is a publisher/manager");
+        var register = { "request": "join", "room": myroom, "ptype": "publisher", "display": 'phil' };
+        self.janusVideoPlugin.send({"message": register});
+      },
+      error: function(error) {
+        Janus.error("  -- Error attaching plugin...", error);
+      },
+      consentDialog: function(on) {
+				Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
+				if(on) {
+          console.log('Ask consent');
+					// Darken screen and show hint
+          /*
+					$.blockUI({
+						message: '<div><img src="up_arrow.png"/></div>',
+						css: {
+							border: 'none',
+							padding: '15px',
+							backgroundColor: 'transparent',
+							color: '#aaa',
+							top: '10px',
+							left: (navigator.mozGetUserMedia ? '-100px' : '300px')
+						} });
+            */
+				} else {
+          console.log('Adk consent');
+					// Restore screen
+					// $.unblockUI();
+				}
+			},
+      mediaState: function(medium, on) {
+        Janus.log("Janus " + (on ? "started" : "stopped") + " receiving our " + medium);
+      },
+      webrtcState: function(on) {
+        Janus.log("Janus says our WebRTC PeerConnection is " + (on ? "up" : "down") + " now");
+      },
+      onmessage: function(msg, jsep) {
+        Janus.debug(" ::: Got a message (publisher) :::");
+        Janus.debug(msg);
+        var event = msg["videoroom"];
+        Janus.debug("Event: " + event);
+        if(event != undefined && event != null) {
+          if(event === "joined") {
+            // Publisher/manager created, negotiate WebRTC and attach to existing feeds, if any
+            Janus.log("Successfully joined room " + msg["room"] + " with ID " + msg["id"]);
+            _publishOwnVideoFeed.call(self, false);
+            // Any new feed to attach to?
+            if(msg["publishers"] !== undefined && msg["publishers"] !== null) {
+              var list = msg["publishers"];
+              Janus.debug("Got a list of available publishers/feeds:");
+              Janus.debug(list);
+              for(var f in list) {
+                var id = list[f]["id"];
+                var display = list[f]["display"];
+                var audio = list[f]["audio_codec"];
+                var video = list[f]["video_codec"];
+                Janus.debug("  >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
+                _newRemoteFeed.call(self, id, display, audio, video);
+              }
+            }
+          } else if(event === "destroyed") {
+            // The room has been destroyed
+            Janus.warn("The room has been destroyed!");
+          } else if(event === "event") {
+            // Any new feed to attach to?
+            if(msg["publishers"] !== undefined && msg["publishers"] !== null) {
+              var list = msg["publishers"];
+              Janus.debug("Got a list of available publishers/feeds:");
+              Janus.debug(list);
+              for(var f in list) {
+                var id = list[f]["id"];
+                var display = list[f]["display"];
+                var audio = list[f]["audio_codec"];
+                var video = list[f]["video_codec"];
+                Janus.debug("  >> [" + id + "] " + display + " (audio: " + audio + ", video: " + video + ")");
+                _newRemoteFeed.call(self, id, display, audio, video);
+              }
+            } else if(msg["leaving"] !== undefined && msg["leaving"] !== null) {
+              // One of the publishers has gone away?
+              var leaving = msg["leaving"];
+              Janus.log("Publisher left: " + leaving);
+              var remoteFeed = null;
+              for(var i=1; i<6; i++) {
+                if(self.janusFeeds[i] != null && self.janusFeeds[i] != undefined && self.janusFeeds[i].rfid == leaving) {
+                  remoteFeed = self.janusFeeds[i];
+                  break;
+                }
+              }
+              if(remoteFeed != null) {
+                Janus.debug("Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
+                self.janusFeeds[remoteFeed.rfindex] = null;
+                remoteFeed.detach();
+              }
+            } else if(msg["unpublished"] !== undefined && msg["unpublished"] !== null) {
+              // One of the publishers has unpublished?
+              var unpublished = msg["unpublished"];
+              Janus.log("Publisher left: " + unpublished);
+              if(unpublished === 'ok') {
+                // That's us
+                self.janusVideoPlugin.hangup();
+                return;
+              }
+              var remoteFeed = null;
+              for(var i=1; i<6; i++) {
+                if(self.janusFeeds[i] != null && self.janusFeeds[i] != undefined && self.janusFeeds[i].rfid == unpublished) {
+                  remoteFeed = self.janusFeeds[i];
+                  break;
+                }
+              }
+              if(remoteFeed != null) {
+                Janus.debug("Feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") has left the room, detaching");
+                let target = document.querySelector(`#${self.janusVideoOptions.remoteVideosContainerId} div[remoteid='${remoteFeed.rfindex}']`);
+                target.innerHTML = '';
+//                $('#remote'+remoteFeed.rfindex).empty().hide();
+//                $('#videoremote'+remoteFeed.rfindex).empty();
+                self.janusFeeds[remoteFeed.rfindex] = null;
+                remoteFeed.detach();
+              }
+            } else if(msg["error"] !== undefined && msg["error"] !== null) {
+              if(msg["error_code"] === 426) {
+                // This is a "no such room" error: give a more meaningful description
+                Janus.debug("No such room...");
+              }
+            }
+          }
+        }
+
+        if(jsep !== undefined && jsep !== null) {
+          Janus.debug("Handling SDP as well...");
+          Janus.debug(jsep);
+          self.janusVideoPlugin.handleRemoteJsep({jsep: jsep});
+          // Check if any of the media we wanted to publish has
+          // been rejected (e.g., wrong or unsupported codec)
+          var audio = msg["audio_codec"];
+          if(self.janusVideoStream && self.janusVideoStream.getAudioTracks() && self.janusVideoStream.getAudioTracks().length > 0 && !audio) {
+            // Audio has been rejected
+            Janus.log("Our audio stream has been rejected, viewers won't hear us");
+          }
+          var video = msg["video_codec"];
+          if(self.janusVideoStream && self.janusVideoStream.getVideoTracks() && self.janusVideoStream.getVideoTracks().length > 0 && !video) {
+            // Video has been rejected
+            Janus.log("Our video stream has been rejected, viewers won't see us");
+          }
+        }
+      },
+      onlocalstream: function(stream) {
+        Janus.debug(" ::: Got a local stream :::");
+        self.janusVideoStream = stream;
+        Janus.debug(stream);
+
+        let localVideoElement = document.querySelector(`#${self.janusVideoOptions.localVideoContainerId} video`);
+        let remoteVideosContainerElement = document.querySelector(`#${self.janusVideoOptions.remoteVideosContainerId}`);
+
+        if (localVideoElement === null || typeof localVideoElement === 'undefined') {
+          const localVideoContainer = document.createElement('div');
+          localVideoElement = document.createElement('video');
+          localVideoElement.autoplay = true;
+
+          localVideoContainer.id = self.janusVideoOptions.localVideoContainerId;
+          localVideoContainer.appendChild(localVideoElement);
+          document.body.appendChild(localVideoContainer);
+        } else {
+          localVideoElement.autoplay = true;
+        }
+
+        if (remoteVideosContainerElement === null || typeof remoteVideosContainerElement === 'undefined') {
+          remoteVideosContainerElement = document.createElement('div');
+          remoteVideosContainerElement.id = self.janusVideoOptions.remoteVideosContainerId;
+          document.body.appendChild(remoteVideosContainerElement);
+        }
+
+        Janus.attachMediaStream(localVideoElement, stream);
+        if(self.janusVideoPlugin.webrtcStuff.pc.iceConnectionState !== "completed" &&
+        self.janusVideoPlugin.webrtcStuff.pc.iceConnectionState !== "connected") {
+          console.log('Publishing video...');
+        }
+        var videoTracks = stream.getVideoTracks();
+        if(videoTracks === null || videoTracks === undefined || videoTracks.length === 0) {
+          // No webcam
+          console.log('No webcam');
+        } else {
+          console.log('Need webcam');
+        }
+      },
+      onremotestream: function(stream) {
+        // The publisher stream is sendonly, we don't expect anything here
+      },
+      oncleanup: function() {
+        Janus.log(" ::: Got a cleanup notification: we are unpublished now :::");
+        self.janusVideoStream = null;
+      }
+    });
+}
+
+function _newRemoteFeed(id, display, audio, video) {
+  const self = this;
+	// A new feed has been published, create a new plugin handle and attach to it as a subscriber
+	var remoteFeed = null;
+	this.janusInstance.attach(
+		{
+			plugin: "janus.plugin.videoroom",
+			opaqueId: "videoroomtest-123465464574746",
+			success: function(pluginHandle) {
+				remoteFeed = pluginHandle;
+				remoteFeed.simulcastStarted = false;
+				Janus.log("Plugin attached! (" + remoteFeed.getPlugin() + ", id=" + remoteFeed.getId() + ")");
+				Janus.log("  -- This is a subscriber");
+				// We wait for the plugin to send us an offer
+        //	var listen = { "request": "join", "room": myroom, "ptype": "subscriber", "feed": id, "private_id": mypvtid };
+				var listen = { "request": "join", "room": myroom, "ptype": "subscriber", "feed": id };
+				// In case you don't want to receive audio, video or data, even if the
+				// publisher is sending them, set the 'offer_audio', 'offer_video' or
+				// 'offer_data' properties to false (they're true by default), e.g.:
+				// 		listen["offer_video"] = false;
+				// For example, if the publisher is VP8 and this is Safari, let's avoid video
+				if(video !== "h264" && Janus.webRTCAdapter.browserDetails.browser === "safari") {
+					if(video)
+						video = video.toUpperCase()
+					console.log("Publisher is using " + video + ", but Safari doesn't support it: disabling video");
+					listen["offer_video"] = false;
+				}
+				remoteFeed.send({"message": listen});
+			},
+			error: function(error) {
+				Janus.error("  -- Error attaching plugin...", error);
+				bootbox.alert("Error attaching plugin... " + error);
+			},
+			onmessage: function(msg, jsep) {
+				Janus.debug(" ::: Got a message (subscriber) :::");
+				Janus.debug(msg);
+				var event = msg["videoroom"];
+				Janus.debug("Event: " + event);
+				if(msg["error"] !== undefined && msg["error"] !== null) {
+					bootbox.alert(msg["error"]);
+				} else if(event != undefined && event != null) {
+					if(event === "attached") {
+						// Subscriber created and attached
+						for(var i=1;i<6;i++) {
+							if(self.janusFeeds[i] === undefined || self.janusFeeds[i] === null) {
+								self.janusFeeds[i] = remoteFeed;
+								remoteFeed.rfindex = i;
+								break;
+							}
+						}
+						remoteFeed.rfid = msg["id"];
+						remoteFeed.rfdisplay = msg["display"];
+
+            var target = document.querySelector(`#${self.janusVideoOptions.remoteVideosContainerId} div[remoteid='${remoteFeed.rfindex}]'`);
+            if (target === null || typeof target === 'undefined') {
+              const remoteVideoElement = document.createElement('div');
+              remoteVideoElement.setAttribute('remoteid', remoteFeed.rfindex);
+
+              document
+              .querySelector(`#${self.janusVideoOptions.remoteVideosContainerId}`)
+              .appendChild(remoteVideoElement);
+            }
+
+						Janus.log("Successfully attached to feed " + remoteFeed.rfid + " (" + remoteFeed.rfdisplay + ") in room " + msg["room"]);
+						//$('#remote'+remoteFeed.rfindex).removeClass('hide').html(remoteFeed.rfdisplay).show();
+					} else if(event === "event") {
+						// Check if we got an event on a simulcast-related event from this publisher
+						var substream = msg["substream"];
+						var temporal = msg["temporal"];
+						if((substream !== null && substream !== undefined) || (temporal !== null && temporal !== undefined)) {
+							if(!remoteFeed.simulcastStarted) {
+								remoteFeed.simulcastStarted = true;
+								// Add some new buttons
+								addSimulcastButtons(remoteFeed.rfindex);
+							}
+							// We just received notice that there's been a switch, update the buttons
+							updateSimulcastButtons(remoteFeed.rfindex, substream, temporal);
+						}
+					} else {
+						// What has just happened?
+					}
+				}
+				if(jsep !== undefined && jsep !== null) {
+					Janus.debug("Handling SDP as well...");
+					Janus.debug(jsep);
+					// Answer and attach
+					remoteFeed.createAnswer(
+						{
+							jsep: jsep,
+							// Add data:true here if you want to subscribe to datachannels as well
+							// (obviously only works if the publisher offered them in the first place)
+							media: { audioSend: false, videoSend: false },	// We want recvonly audio/video
+							success: function(jsep) {
+								Janus.debug("Got SDP!");
+								Janus.debug(jsep);
+								var body = { "request": "start", "room": myroom };
+								remoteFeed.send({"message": body, "jsep": jsep});
+							},
+							error: function(error) {
+								Janus.error("WebRTC error:", error);
+								bootbox.alert("WebRTC error... " + JSON.stringify(error));
+							}
+						});
+				}
+			},
+			webrtcState: function(on) {
+				Janus.log("Janus says this WebRTC PeerConnection (feed #" + remoteFeed.rfindex + ") is " + (on ? "up" : "down") + " now");
+			},
+			onlocalstream: function(stream) {
+				// The subscriber stream is recvonly, we don't expect anything here
+			},
+			onremotestream: function(stream) {
+				Janus.debug("Remote feed #" + remoteFeed.rfindex);
+				var addButtons = false;
+        const target = document.querySelector(`#${self.janusVideoOptions.remoteVideosContainerId} div[remoteid='${remoteFeed.rfindex}']`);
+        //if($('#remotevideo'+remoteFeed.rfindex).length === 0) {
+				if(target.length === 0 || typeof target.length === 'undefined') {
+					addButtons = true;
+					// No remote video yet
+					let innerHTML = '<video class="rounded centered relative hide" id="remotevideo' + remoteFeed.rfindex + '" width="100%" height="100%" autoplay/>';
+
+          target.innerHTML = innerHTML;
+				}
+				Janus.attachMediaStream(target.querySelector('video'), stream);
+				var videoTracks = stream.getVideoTracks();
+				if(videoTracks === null || videoTracks === undefined || videoTracks.length === 0) {
+					// No remote video
+          let innerHTML = '<div class="no-video-container">' +
+            '<i class="fa fa-video-camera fa-5 no-video-icon"></i>' +
+            '<span class="no-video-text">No remote video available</span>' +
+          '</div>';
+
+          target.innerHTML = innerHTML;
+				}
+			},
+			oncleanup: function() {
+				Janus.log(" ::: Got a cleanup notification (remote feed " + id + ") :::");
+        const target = document.querySelector(`#${self.janusVideoOptions.remoteVideosContainerId} div[remoteid='${remoteFeed.rfindex}']`);
+        target.parentNode.removeChild(target);
+			}
+		});
+}
+
+function startVideoInConference(options){
+  const self = this;
+
+  this.janusVideoOptions = Object.assign({
+    localVideoContainerId: 'apidaze-local-video-container-id',
+    remoteVideosContainerId: 'apidaze-remote-videos-container-id'
+  }, options);
+
+  if (this.callType !== 'conference') {
+    LOGGER.log(`Not in a conference room, cannot start video`);
+    return;
+  }
+  LOGGER.log(`Starting video in room ${this.conferenceName}`);
+  Janus.init({
+    debug: "all",
+    dependencies: {
+      webRTCAdapter: WebRTCAdapter
+    },
+    callback: function() {
+      self.janusInitOk = true;
+      console.log('ok');
+      self.janusInstance = new Janus({
+        server: 'wss://ws2-dev-us-nyc-1.apidaze.io:8989',
+        success: function() {
+              console.log('Janus Instance created');
+              _attachJanusVideoPlugin.call(self);
+            },
+        error: function(error) {
+              Janus.error(error);
+              self.janusInitOk = false;
+              self.janusInstance = null;
+            },
+        destroyed: function() {
+              console.log('Janus Instance destroyed');
+              self.janusInitOk = false;
+              self.janusInstance = null;
+            }
+      });
+    }
+  });
+
 }
 
 function sendDTMF(digits){
