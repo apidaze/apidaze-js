@@ -92,7 +92,6 @@ var Call = function(clientObj, callID, params, listeners){
   this.janusInitOk = false;
   this.janusInstance = null;
   this.janusVideoPlugin = null;
-  this.janusRemoteVideosPlugin = null;
   this.janusVideoStream = null;
   this.janusFeeds = [];
 
@@ -151,7 +150,7 @@ var Call = function(clientObj, callID, params, listeners){
 
   /**
   * The functions below can be called by the developer. The first group
-  * sends commands to FreeSWITCH and manages audio functionalities, the
+  * sends commands to FreeSWITCH and manages audio + text functionalities, the
   * second group calls Janus and handles video
   */
   // FreeSWITCH Functions
@@ -719,19 +718,28 @@ function _newRemoteFeed(id, display, audio, video) {
 }
 
 function muteVideo() {
-  return this.janusVideoPlugin.muteVideo()
+  return this.janusInitOk && this.janusVideoPlugin.muteVideo()
 }
 
 function unmuteVideo() {
-  return this.janusVideoPlugin.unmuteVideo()
+  return this.janusInitOk && this.janusVideoPlugin.unmuteVideo()
 }
 
 function publishMyVideoInRoom() {
-  _publishOwnVideoFeed.call(this, false);
+  if (this.janusInitOk !== true) {
+    LOGGER.log('Please call initVideoInConferenceRoom() first');
+    return;
+  }
+  this.janusInitOk && _publishOwnVideoFeed.call(this, false);
 }
 
 function initVideoInConferenceRoom(options){
   const self = this;
+
+  if (this.callType !== 'conference') {
+    LOGGER.log(`Not in a conference room, won't start video`);
+    return;
+  }
 
   this.janusVideoOptions = Object.assign({
     localVideoContainerId: 'apidaze-local-video-container-id',
@@ -751,10 +759,6 @@ function initVideoInConferenceRoom(options){
     document.body.appendChild(remoteVideosContainer);
   }
 
-  if (this.callType !== 'conference') {
-    LOGGER.log(`Not in a conference room, cannot start video`);
-    return;
-  }
   LOGGER.log(`Starting video in room ${this.conferenceName}`);
   Janus.init({
     debug: "all",
