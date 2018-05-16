@@ -76,17 +76,17 @@ var Call = function(clientObj, callID, params, listeners){
   /**
   * Video attributes for this call
   *
-  * Janus handles video in conference rooms. That is, a starts
-  * a conference room in FreeSWITCH in audio, and may afterwards
-  * 'upgrade' this conference to video using Janus. a second WebSocket
-  * that communicates with a Janus server is used and a new RTCPeerConnection
-  * is created to manage video.
+  * Janus handles video in conference rooms. That is, a user starts
+  * a conference room in FreeSWITCH in audio, and may later 'upgrade' this
+  * conference to video using Janus.
+  * A second WebSocket that communicates with a Janus server is used and
+  * a new RTCPeerConnection is created to manage video.
   *
   * - janusInitOk is set to 'true' after Janus has been initiated using the
-  * 'startVideoInConference' function.
+  * 'initVideoInConferenceRoom' function.
   * - janusInstance is a instance of Janus, created after calling 'new Janus()'
   * - janusVideoPlugin is the object that results of a success callback of the
-  *   janusInstance.attach() function (the plugHandle parameter)
+  *   janusInstance.attach() function (the pluginHandle parameter)
   * - janusVideoStream is user's local video stream
   */
   this.janusInitOk = false;
@@ -149,7 +149,12 @@ var Call = function(clientObj, callID, params, listeners){
   this._onRoomAdd = handleRoomAdd;
   this._onRoomDel = handleRoomDel;
 
-  // Functions that can be called by dev
+  /**
+  * The functions below can be called by the developer. The first group
+  * sends commands to FreeSWITCH and manages audio functionalities, the
+  * second group calls Janus and handles video
+  */
+  // FreeSWITCH Functions
   this.sendDTMF = sendDTMF;
   this.inviteToConference = inviteToConference;
   this.unmuteAllInConference = unmuteAllInConference;
@@ -165,9 +170,11 @@ var Call = function(clientObj, callID, params, listeners){
   this.sendText = sendText;
   this.stopLocalAudio = stopLocalAudio;
   this.startLocalAudio = startLocalAudio;
-  this.stopLocalVideo = stopLocalVideo;
-  this.startLocalVideo = startLocalVideo;
-  this.startVideoInConference = startVideoInConference;
+  // Janus functions
+  this.initVideoInConferenceRoom = initVideoInConferenceRoom;
+  this.publishMyVideoInRoom = publishMyVideoInRoom;
+  this.muteVideo = muteVideo;
+  this.unmuteVideo = unmuteVideo;
 
   if (this.clientObj._websocket.readyState !== this.clientObj._websocket.OPEN){
     throw {message: "WebSocket is closed"}
@@ -338,22 +345,6 @@ function startLocalAudio(){
   );
 }
 
-function stopLocalVideo(){
-  this.localAudioVideoStream.getVideoTracks().forEach(
-    function(track) {
-      track.enabled = false;
-    }
-  );
-}
-
-function startLocalVideo(){
-  this.localAudioVideoStream.getVideoTracks().forEach(
-    function(track) {
-      track.enabled = true;
-    }
-  );
-}
-
 function _publishOwnVideoFeed(useAudio) {
 	// Publish our stream
   const self = this;
@@ -424,7 +415,7 @@ function _attachJanusVideoPlugin(){
 						} });
             */
 				} else {
-          console.log('Adk consent');
+          console.log('Ask consent');
 					// Restore screen
 					// $.unblockUI();
 				}
@@ -444,7 +435,7 @@ function _attachJanusVideoPlugin(){
           if(event === "joined") {
             // Publisher/manager created, negotiate WebRTC and attach to existing feeds, if any
             Janus.log("Successfully joined room " + msg["room"] + " with ID " + msg["id"]);
-            _publishOwnVideoFeed.call(self, false);
+//            _publishOwnVideoFeed.call(self, false);
             // Any new feed to attach to?
             if(msg["publishers"] !== undefined && msg["publishers"] !== null) {
               var list = msg["publishers"];
@@ -553,21 +544,12 @@ function _attachJanusVideoPlugin(){
         let remoteVideosContainerElement = document.querySelector(`#${self.janusVideoOptions.remoteVideosContainerId}`);
 
         if (localVideoElement === null || typeof localVideoElement === 'undefined') {
-          const localVideoContainer = document.createElement('div');
           localVideoElement = document.createElement('video');
           localVideoElement.autoplay = true;
-
-          localVideoContainer.id = self.janusVideoOptions.localVideoContainerId;
-          localVideoContainer.appendChild(localVideoElement);
-          document.body.appendChild(localVideoContainer);
+          document.getElementById(self.janusVideoOptions.localVideoContainerId)
+          .appendChild(localVideoElement);
         } else {
           localVideoElement.autoplay = true;
-        }
-
-        if (remoteVideosContainerElement === null || typeof remoteVideosContainerElement === 'undefined') {
-          remoteVideosContainerElement = document.createElement('div');
-          remoteVideosContainerElement.id = self.janusVideoOptions.remoteVideosContainerId;
-          document.body.appendChild(remoteVideosContainerElement);
         }
 
         Janus.attachMediaStream(localVideoElement, stream);
@@ -736,13 +718,38 @@ function _newRemoteFeed(id, display, audio, video) {
 		});
 }
 
-function startVideoInConference(options){
+function muteVideo() {
+  return this.janusVideoPlugin.muteVideo()
+}
+
+function unmuteVideo() {
+  return this.janusVideoPlugin.unmuteVideo()
+}
+
+function publishMyVideoInRoom() {
+  _publishOwnVideoFeed.call(this, false);
+}
+
+function initVideoInConferenceRoom(options){
   const self = this;
 
   this.janusVideoOptions = Object.assign({
     localVideoContainerId: 'apidaze-local-video-container-id',
     remoteVideosContainerId: 'apidaze-remote-videos-container-id'
   }, options);
+
+  // Check whether DOM containers exist, create otherwise and append to <body/>
+  if (document.getElementById(this.janusVideoOptions.localVideoContainerId) == null) {
+    const localVideoContainer = document.createElement('div');
+    localVideoContainer.id = self.janusVideoOptions.localVideoContainerId;
+    document.body.appendChild(localVideoContainer);
+  }
+
+  if (document.getElementById(this.janusVideoOptions.remoteVideosContainerId) == null) {
+    const remoteVideosContainer = document.createElement('div');
+    remoteVideosContainer.id = this.janusVideoOptions.remoteVideosContainerId;
+    document.body.appendChild(remoteVideosContainer);
+  }
 
   if (this.callType !== 'conference') {
     LOGGER.log(`Not in a conference room, cannot start video`);
