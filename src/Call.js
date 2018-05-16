@@ -10,8 +10,6 @@ var LOGGER = new Logger(false, LOG_PREFIX);
 
 var APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID = "ecomagggebppeikobjchgmnoldifjnjj";
 
-var myroom = 1234554321;
-
 /**
 * The callID parameter is expected to be null, except when clientObj is
 * re-attaching to an existing call in FreeSWITCH
@@ -94,6 +92,7 @@ var Call = function(clientObj, callID, params, listeners){
   this.janusVideoPlugin = null;
   this.janusVideoStream = null;
   this.janusFeeds = [];
+  this.janusVideoRoomID = 0;
 
   var audioVideoDOMContainerObj = document.getElementById(tagId);
 
@@ -390,8 +389,58 @@ function _attachJanusVideoPlugin(){
         self.janusVideoPlugin = pluginHandle;
         Janus.log("Plugin attached! (" + self.janusVideoPlugin.getPlugin() + ", id=" + self.janusVideoPlugin.getId() + ")");
         Janus.log("  -- This is a publisher/manager");
-        var register = { "request": "join", "room": myroom, "ptype": "publisher", "display": 'phil' };
-        self.janusVideoPlugin.send({"message": register});
+        var create = { "request": "exists", "room": self.janusVideoRoomID };
+        self.janusVideoPlugin.send(
+          {
+            "message": {
+              "request": "exists",
+              "room": self.janusVideoRoomID
+            },
+            success: function(result){
+              if (result.exists == true){
+                self.janusVideoPlugin.send(
+                  {
+                    "message": {
+                      "request": "join",
+                      "room": self.janusVideoRoomID,
+                      "ptype": "publisher",
+                      "display": 'phil'
+                    },
+                    success: function(result){
+                      LOGGER.log('JOINED ROOM FOR VIDEO');
+                    }
+                  }
+                );
+              } else {
+                self.janusVideoPlugin.send(
+                  {
+                    "message": {
+                      "request": "create",
+                      "room": self.janusVideoRoomID,
+                      "ptype": "publisher",
+                      "display": 'phil'
+                    },
+                    success: function(result){
+                      LOGGER.log('ROOM CREATED FOR VIDEO');
+                      self.janusVideoPlugin.send(
+                        {
+                          "message": {
+                            "request": "join",
+                            "room": self.janusVideoRoomID,
+                            "ptype": "publisher",
+                            "display": 'phil'
+                          },
+                          success: function(result){
+                            LOGGER.log('JOINED ROOM FOR VIDEO');
+                          }
+                        }
+                      );
+                    }
+                  }
+                );
+              }
+            }
+          });
       },
       error: function(error) {
         Janus.error("  -- Error attaching plugin...", error);
@@ -589,7 +638,7 @@ function _newRemoteFeed(id, display, audio, video) {
 				Janus.log("  -- This is a subscriber");
 				// We wait for the plugin to send us an offer
         //	var listen = { "request": "join", "room": myroom, "ptype": "subscriber", "feed": id, "private_id": mypvtid };
-				var listen = { "request": "join", "room": myroom, "ptype": "subscriber", "feed": id };
+				var listen = { "request": "join", "room": self.janusVideoRoomID, "ptype": "subscriber", "feed": id };
 				// In case you don't want to receive audio, video or data, even if the
 				// publisher is sending them, set the 'offer_audio', 'offer_video' or
 				// 'offer_data' properties to false (they're true by default), e.g.:
@@ -669,7 +718,7 @@ function _newRemoteFeed(id, display, audio, video) {
 							success: function(jsep) {
 								Janus.debug("Got SDP!");
 								Janus.debug(jsep);
-								var body = { "request": "start", "room": myroom };
+								var body = { "request": "start", "room": self.janusVideoRoomID };
 								remoteFeed.send({"message": body, "jsep": jsep});
 							},
 							error: function(error) {
@@ -772,17 +821,26 @@ function initVideoInConferenceRoom(options){
         server: 'wss://ws2-dev-us-nyc-1.apidaze.io:8989',
         success: function() {
               console.log('Janus Instance created');
+              self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
               _attachJanusVideoPlugin.call(self);
             },
         error: function(error) {
               Janus.error(error);
               self.janusInitOk = false;
               self.janusInstance = null;
+              self.janusVideoPlugin = null;
+              self.janusVideoStream = null;
+              self.janusFeeds = [];
+              self.janusVideoRoomID = 0;
             },
         destroyed: function() {
               console.log('Janus Instance destroyed');
               self.janusInitOk = false;
               self.janusInstance = null;
+              self.janusVideoPlugin = null;
+              self.janusVideoStream = null;
+              self.janusFeeds = [];
+              self.janusVideoRoomID = 0;
             }
       });
     }
