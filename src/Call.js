@@ -820,28 +820,28 @@ function initVideoInConferenceRoom(options){
       self.janusInstance = new Janus({
         server: 'wss://ws2-dev-us-nyc-1.apidaze.io:8989',
         success: function() {
-              console.log('Janus Instance created');
-              self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
-              _attachJanusVideoPlugin.call(self);
-            },
+          console.log('Janus Instance created');
+          self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
+          _attachJanusVideoPlugin.call(self);
+        },
         error: function(error) {
-              Janus.error(error);
-              self.janusInitOk = false;
-              self.janusInstance = null;
-              self.janusVideoPlugin = null;
-              self.janusVideoStream = null;
-              self.janusFeeds = [];
-              self.janusVideoRoomID = 0;
-            },
+          Janus.error(error);
+          self.janusInitOk = false;
+          self.janusInstance = null;
+          self.janusVideoPlugin = null;
+          self.janusVideoStream = null;
+          self.janusFeeds = [];
+          self.janusVideoRoomID = 0;
+        },
         destroyed: function() {
-              console.log('Janus Instance destroyed');
-              self.janusInitOk = false;
-              self.janusInstance = null;
-              self.janusVideoPlugin = null;
-              self.janusVideoStream = null;
-              self.janusFeeds = [];
-              self.janusVideoRoomID = 0;
-            }
+          console.log('Janus Instance destroyed');
+          self.janusInitOk = false;
+          self.janusInstance = null;
+          self.janusVideoPlugin = null;
+          self.janusVideoStream = null;
+          self.janusFeeds = [];
+          self.janusVideoRoomID = 0;
+        }
       });
     }
   });
