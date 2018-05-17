@@ -15,38 +15,13 @@ var APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID = "ecomagggebppeikobjchgmnoldifjnjj"
 * re-attaching to an existing call in FreeSWITCH
 */
 var Call = function(clientObj, callID, params, listeners){
-  /**
-  * videoParams example :
-  *
-  *  minWidth: 320,
-  *  minHeight: 240,
-  *  maxWidth: 640,
-  *  maxHeight: 480,
-  *  // The minimum frame rate of the client camera, Verto will fail if it's
-  *  // less than this.
-  *  minFrameRate: 15,
-  *  // The maximum frame rate to send from the camera.
-  *  bestFrameRate: 30,
-  */
-
   let randomString = (function() {for(var c = ''; c.length < 12;) c += Math.random().toString(36).substr(2, 1); return c})();
 
   var {
-    activateAudio = true,
-    activateVideo = false,
-    videoParams = {
-      activateScreenShare: false
-    },
     tagId = 'apidaze-audio-video-container-id-' + randomString,
     audioParams = {},
     userKeys
   } = params;
-
-  if (videoParams.activateScreenShare === true) {
-    if (typeof videoParams.screenShareParams === "undefined") {
-      videoParams.screenShareParams = {};
-    }
-  }
 
   var {
     onRinging,
@@ -65,9 +40,6 @@ var Call = function(clientObj, callID, params, listeners){
 
   this.clientObj = clientObj;
   this.setRemoteDescription = setRemoteDescription; // called from clientObj
-  this.activateVideo = activateVideo;
-  this.activateAudio = activateAudio;
-  this.videoParams = videoParams;
   this.audioParams = audioParams;
   this.audioVideoTagId = tagId;
 
@@ -101,23 +73,18 @@ var Call = function(clientObj, callID, params, listeners){
 
   // Needed for Safari on iOS, see : https://github.com/webrtc/samples/issues/929
   this.remoteAudioVideo.setAttribute("playsinline", "");
-
   this.remoteAudioVideo.controls = false;
-  if (activateVideo === false){
-    this.remoteAudioVideo.style.display = "none";
-  }
+  this.remoteAudioVideo.style.display = 'none';
 
   if (audioVideoDOMContainerObj == null) {
-    LOGGER.log("Inserting HTML5 <video/> element " + (this.activateAudio ?
-    "(video on) " : "(video off) ") + "to APIdaze tag " + tagId);
+    LOGGER.log("Inserting HTML5 <video/> element (audio only) to APIdaze tag " + tagId);
     var audioVideoDOMContainerObj = document.createElement("div");
     audioVideoDOMContainerObj.id = tagId;
     audioVideoDOMContainerObj.appendChild(this.remoteAudioVideo);
 
     document.body.appendChild(audioVideoDOMContainerObj);
   } else {
-    LOGGER.log("Inserting HTML5 <video/> element " + (this.activateAudio ?
-    "(video on) " : "(video off) ") + "to user provided tag " + tagId);
+    LOGGER.log("Inserting HTML5 <video/> element (audio only) to user provided tag " + tagId);
     audioVideoDOMContainerObj.appendChild(this.remoteAudioVideo);
   }
 
@@ -179,152 +146,54 @@ var Call = function(clientObj, callID, params, listeners){
   }
 
   var GUMConstraints = {
-    audio: this.activateAudio
+    audio: true
   };
-
-  if (this.activateVideo === false) {
-    GUMConstraints.video = false;
-  } else {
-    LOGGER.log("Need to set GUMConstraints.video");
-    GUMConstraints.video = {
-      width: {
-        min: this.videoParams.minWidth || 320,
-        max: this.videoParams.maxWidth || 640,
-      },
-      height: {
-        min: this.videoParams.minHeight || 240,
-        max: this.videoParams.maxHeight || 480
-      },
-      frameRate: {
-        min: 15,
-        ideal: this.videoParams.bestFrameRate || 30,
-        max: 30
-      }
-    }
-  }
 
   LOGGER.log("GUM constraints : " + JSON.stringify(GUMConstraints));
 
   let self = this;
 
-  if (this.activateVideo === true && this.videoParams.activateScreenShare === true) {
-    let request = { sources: ['window', 'screen', 'tab'] };
-    var chrome_extension_id = this.videoParams.screenShareParams.extensionID || APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID;
+  navigator.mediaDevices.enumerateDevices()
+  .then(function (devices) {
+    LOGGER.log("Found devices : ", devices);
+    return navigator.mediaDevices.getUserMedia(GUMConstraints);
+  })
+  .then(function(stream){
+    LOGGER.log("WebRTC Ok");
+    self.localAudioVideoStream = stream;
+  })
+  .then(function (){
+    createPeerConnection.call(self);
+  })
+  .then(function () {
+    attachStreamToPeerConnection.call(self);
 
-    if (chrome_extension_id === APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID) {
-      LOGGER.log("Using APIdaze Chrome extension for screen sharing");
-    } else {
-      LOGGER.log("Using custom Chrome extension for screen sharing :", chrome_extension_id);
-    }
+    var offerOptions = {
+        offerToReceiveAudio: 1,
+        offerToReceiveVideo: 1
+      };
 
+    return self.peerConnection.createOffer(offerOptions);
+  })
+  .then(function(offer){
+    LOGGER.log("Local SDP : " + offer.sdp);
+    LOGGER.log("Setting description to local peerConnection");
+    return self.peerConnection.setLocalDescription(offer);
+  })
+  .then(function(){
     /**
-    * Send message to Chrome Extension and start WebRTC when we get an answer back
+    * Regular WebRTC examples show that the right spot to send the SDP
+    * to the server is here. We cannot do that because our WebRTC remote
+    * peer (FreeSWITCH) does not handle Trickle ICE and needs to get
+    * all the candidates in the first offer
     */
-    chrome.runtime.sendMessage(chrome_extension_id, request, response => {
-      if (response.type !== 'success') {
-        this.clientObj._onError({origin: "call", message: "Failed to get an answer from Chrome extension (ScreenShare)"});
-        return;
-      }
+    LOGGER.log("WebRTC set up, ready to start call");
+  })
+  .catch(function(error){
+    LOGGER.log("Error :", error);
+    handleGUMError.call(self, error);
+  });
 
-      var screenSchareConstraints = {
-        video : {
-          mandatory : {
-            chromeMediaSource: 'desktop',
-            chromeMediaSourceId: response.streamId
-          }
-        }
-      }
-
-      navigator.mediaDevices.getUserMedia(screenSchareConstraints)
-      .then(screenShareStream => {
-        self.localAudioVideoStream = screenShareStream;
-        return navigator.mediaDevices.getUserMedia(GUMConstraints);
-      })
-      .then(audioStream => {
-        // Now add the first audio track to our previously created
-        // MediaStream for ScreenShare
-        var audioTrack = audioStream.getAudioTracks()[0];
-
-        self.localAudioVideoStream.addTrack(audioTrack);
-
-        // We keep track of this extra local stream in order to close it
-        // properly when the call ends
-        self.extraLocalAudioVideoStream = audioStream;
-      })
-      .then(function (){
-        createPeerConnection.call(self);
-      })
-      .then(function () {
-        attachStreamToPeerConnection.call(self);
-
-        var offerOptions = {
-            offerToReceiveAudio: 1,
-            offerToReceiveVideo: 1
-          };
-
-        return self.peerConnection.createOffer(offerOptions);
-      })
-      .then(function(offer){
-        LOGGER.log("Local SDP : " + offer.sdp);
-        LOGGER.log("Setting description to local peerConnection");
-        return self.peerConnection.setLocalDescription(offer);
-      })
-      .then(function(){
-        /**
-        * Regular WebRTC examples show that the right spot to send the SDP
-        * to the server is here. We cannot do that because our WebRTC remote
-        * peer (FreeSWITCH) does not handle Trickle ICE and needs to get
-        * all the candidates in the first offer
-        */
-        LOGGER.log("WebRTC set up, ready to start call");
-      })
-      .catch(function(error){
-        LOGGER.log("Error :", error);
-        handleGUMError.call(self, error);
-      });
-    });
-  } else {
-    navigator.mediaDevices.enumerateDevices()
-    .then(function (devices) {
-      LOGGER.log("Found devices : ", devices);
-      return navigator.mediaDevices.getUserMedia(GUMConstraints);
-    })
-    .then(function(stream){
-      LOGGER.log("WebRTC Ok");
-      self.localAudioVideoStream = stream;
-    })
-    .then(function (){
-      createPeerConnection.call(self);
-    })
-    .then(function () {
-      attachStreamToPeerConnection.call(self);
-
-      var offerOptions = {
-          offerToReceiveAudio: 1,
-          offerToReceiveVideo: 1
-        };
-
-      return self.peerConnection.createOffer(offerOptions);
-    })
-    .then(function(offer){
-      LOGGER.log("Local SDP : " + offer.sdp);
-      LOGGER.log("Setting description to local peerConnection");
-      return self.peerConnection.setLocalDescription(offer);
-    })
-    .then(function(){
-      /**
-      * Regular WebRTC examples show that the right spot to send the SDP
-      * to the server is here. We cannot do that because our WebRTC remote
-      * peer (FreeSWITCH) does not handle Trickle ICE and needs to get
-      * all the candidates in the first offer
-      */
-      LOGGER.log("WebRTC set up, ready to start call");
-    })
-    .catch(function(error){
-      LOGGER.log("Error :", error);
-      handleGUMError.call(self, error);
-    });
-  }
 }
 
 function stopLocalAudio(){
@@ -404,7 +273,8 @@ function _attachJanusVideoPlugin(){
                       "request": "join",
                       "room": self.janusVideoRoomID,
                       "ptype": "publisher",
-                      "display": 'phil'
+                      // FIXME : allow dev to add username here
+                      //"display": 'phil'
                     },
                     success: function(result){
                       LOGGER.log('JOINED ROOM FOR VIDEO');
@@ -418,7 +288,8 @@ function _attachJanusVideoPlugin(){
                       "request": "create",
                       "room": self.janusVideoRoomID,
                       "ptype": "publisher",
-                      "display": 'phil'
+                      // FIXME : allow dev to add username here
+                      // "display": 'phil'
                     },
                     success: function(result){
                       LOGGER.log('ROOM CREATED FOR VIDEO');
@@ -816,11 +687,10 @@ function initVideoInConferenceRoom(options){
     },
     callback: function() {
       self.janusInitOk = true;
-      console.log('ok');
       self.janusInstance = new Janus({
         server: 'wss://ws2-dev-us-nyc-1.apidaze.io:8989',
         success: function() {
-          console.log('Janus Instance created');
+          LOGGER.log('Janus Instance created');
           self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
           _attachJanusVideoPlugin.call(self);
         },
@@ -834,7 +704,7 @@ function initVideoInConferenceRoom(options){
           self.janusVideoRoomID = 0;
         },
         destroyed: function() {
-          console.log('Janus Instance destroyed');
+          LOGGER.log('Janus Instance destroyed');
           self.janusInitOk = false;
           self.janusInstance = null;
           self.janusVideoPlugin = null;
@@ -1168,8 +1038,8 @@ function createPeerConnection(){
       {"googIPv6": false}
     ],
     "mandatory": {
-      'OfferToReceiveAudio': this.activateAudio,
-      'OfferToReceiveVideo': this.activateVideo
+      'OfferToReceiveAudio': true,
+      'OfferToReceiveVideo': false
     }
   };
   var self = this;
