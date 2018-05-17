@@ -140,6 +140,7 @@ var Call = function(clientObj, callID, params, listeners){
   this.publishMyVideoInRoom = publishMyVideoInRoom;
   this.muteVideo = muteVideo;
   this.unmuteVideo = unmuteVideo;
+  this.detachVideo = detachVideo;
 
   if (this.clientObj._websocket.readyState !== this.clientObj._websocket.OPEN){
     throw {message: "WebSocket is closed"}
@@ -647,6 +648,23 @@ function unmuteVideo() {
   return this.janusInitOk && this.janusVideoPlugin.unmuteVideo()
 }
 
+/**
+* Calls detach on our Janus video plugin, then destroy on our Janus instance
+*/
+function detachVideo() {
+  const self = this;
+
+  this.janusVideoPlugin && this.janusVideoPlugin.detach({
+    success: function() {
+      self.janusInstance.destroy();
+    },
+    error: function() {
+      LOGGER.log(`Failed to properly detach our Video plugin from Janus, hoping for the best...`);
+      self.janusInstance.destroy();
+    }
+  });
+}
+
 function publishMyVideoInRoom() {
   if (this.janusInitOk !== true) {
     LOGGER.log('Please call initVideoInConferenceRoom() first');
@@ -725,6 +743,20 @@ function initVideoInConferenceRoom(options = {}, callbackSuccess, callbackError)
           self.janusVideoStream = null;
           self.janusFeeds = [];
           self.janusVideoRoomID = 0;
+
+          const localVideoContainerElement = document
+          .getElementById(self.janusVideoOptions.localVideoContainerId);
+
+          if (localVideoContainerElement !== null) {
+            localVideoContainerElement.innerHTML = '';
+          }
+
+          const remoteVideosContainerElement = document.
+          getElementById(self.janusVideoOptions.remoteVideosContainerId);
+
+          if (remoteVideosContainerElement !== null) {
+            remoteVideosContainerElement.innerHTML = '';
+          }
         }
       });
     }
@@ -1139,6 +1171,8 @@ function handleHangup(){
   if (audioVideoDOMContainerObj) {
     audioVideoDOMContainerObj.parentNode.removeChild(audioVideoDOMContainerObj);
   }
+
+  this.janusInstance && this.janusInstance.destroy();
 
   this.peerConnection.close();
   this.remoteAudioVideo = null;
