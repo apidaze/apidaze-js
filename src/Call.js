@@ -246,7 +246,7 @@ function _publishOwnVideoFeed(useAudio) {
 		});
 }
 
-function _attachJanusVideoPlugin(){
+function _attachJanusVideoPlugin(callbackSuccess, callbackError){
   var self = this;
 
   var opaqueId = "videoroomtest-123465464574746";
@@ -278,6 +278,7 @@ function _attachJanusVideoPlugin(){
                     },
                     success: function(result){
                       LOGGER.log('JOINED ROOM FOR VIDEO');
+                      typeof callbackSuccess === 'function' && callbackSuccess();
                     }
                   }
                 );
@@ -303,6 +304,7 @@ function _attachJanusVideoPlugin(){
                           },
                           success: function(result){
                             LOGGER.log('JOINED ROOM FOR VIDEO');
+                            typeof callbackSuccess === 'function' && callbackSuccess();
                           }
                         }
                       );
@@ -653,8 +655,13 @@ function publishMyVideoInRoom() {
   this.janusInitOk && _publishOwnVideoFeed.call(this, false);
 }
 
-function initVideoInConferenceRoom(options){
+function initVideoInConferenceRoom(options = {}, callbackSuccess, callbackError){
   const self = this;
+
+  if (typeof options === 'function') {
+    LOGGER.log(`Please provide a valid option object`);
+    return;
+  }
 
   if (this.callType !== 'conference') {
     LOGGER.log(`Not in a conference room, won't start video`);
@@ -697,7 +704,7 @@ function initVideoInConferenceRoom(options){
         success: function() {
           LOGGER.log('Janus Instance created');
           self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
-          _attachJanusVideoPlugin.call(self);
+          _attachJanusVideoPlugin.call(self, callbackSuccess, callbackError);
         },
         error: function(error) {
           Janus.error(error);
@@ -707,6 +714,8 @@ function initVideoInConferenceRoom(options){
           self.janusVideoStream = null;
           self.janusFeeds = [];
           self.janusVideoRoomID = 0;
+
+          typeof callbackError === 'function' && callbackError(error);
         },
         destroyed: function() {
           LOGGER.log('Janus Instance destroyed');
