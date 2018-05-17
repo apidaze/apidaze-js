@@ -661,6 +661,11 @@ function initVideoInConferenceRoom(options){
     return;
   }
 
+  if (this.janusInitOk === true) {
+    LOGGER.log(`Video is already initialized in this room`);
+    return;
+  }
+
   this.janusVideoOptions = Object.assign({
     localVideoContainerId: 'apidaze-local-video-container-id',
     remoteVideosContainerId: 'apidaze-remote-videos-container-id'
@@ -715,7 +720,6 @@ function initVideoInConferenceRoom(options){
       });
     }
   });
-
 }
 
 function sendDTMF(digits){
