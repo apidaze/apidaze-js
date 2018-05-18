@@ -467,6 +467,9 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError){
 
         if (localVideoElement === null || typeof localVideoElement === 'undefined') {
           localVideoElement = document.createElement('video');
+
+          localVideoElement.style.height = '100%';
+          localVideoElement.style.width = '100%';
           localVideoElement.autoplay = true;
           document.getElementById(self.janusVideoOptions.localVideoContainerId)
           .appendChild(localVideoElement);
@@ -616,7 +619,7 @@ function _newRemoteFeed(id, display, audio, video) {
 				if(target.length === 0 || typeof target.length === 'undefined') {
 					addButtons = true;
 					// No remote video yet
-					let innerHTML = '<video class="rounded centered relative hide" id="remotevideo' + remoteFeed.rfindex + '" width="100%" height="100%" autoplay/>';
+					let innerHTML = '<video id="remotevideo' + remoteFeed.rfindex + '" width="100%" height="100%" autoplay/>';
 
           target.innerHTML = innerHTML;
 				}
