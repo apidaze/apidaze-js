@@ -1,8 +1,3 @@
-/**
-* Janus version 0.4.0
-* Commit ID : 88f03e53f4ee0e79c60e283aa7f4874305cecfce
-*/
-
 // List of sessions
 Janus.sessions = {};
 
@@ -189,8 +184,16 @@ Janus.init = function(options) {
 		}
 		Janus.log("Initializing library");
 
-		var usedDependencies = Janus.useDefaultDependencies(options.dependencies);
-
+		var usedDependencies = null;
+		if(options && options.dependencies && (!options.dependencies.isArray ||
+				!options.dependencies.webRTCAdapter || !options.dependencies.httpAPICall ||
+				!options.dependencies.checkJanusExtension || options.dependencies.newWebSocket)) {
+			// Not all dependencies have been overridden: use the default ones as a basis
+			usedDependencies = Janus.useDefaultDependencies(options.dependencies);
+		} else {
+			// This is a complete replacement of the dependencies
+			usedDependencies = options.dependencies;
+		}
 		Janus.isArray = usedDependencies.isArray;
 		Janus.webRTCAdapter = usedDependencies.webRTCAdapter;
 		Janus.httpAPICall = usedDependencies.httpAPICall;
