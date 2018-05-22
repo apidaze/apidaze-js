@@ -33,6 +33,7 @@ var CLIENT = function(configuration = {}){
   this.freeAll = shutdown.bind(this); // freeAll is kept for compatibility reasons
   this.disconnect = shutdown.bind(this); // disconnect is kept for compatibility reasons
   this.sendText = sendText.bind(this);
+  this.getWebsocketServer = getWebsocketServer.bind(this);
 
   // User defined handlers
   this._onDisconnected = function(){
@@ -91,7 +92,8 @@ var CLIENT = function(configuration = {}){
   this._apiKey = apiKey.toString();
   this._status = STATUS_INIT;
   this._sessid = sessid;
-  this._userKeys = userKeys
+  this._userKeys = userKeys;
+  this._wsUrl = wsurl;
 
   this._websocket = new WebSocket(wsurl);
   this._websocket.onopen = handleWebSocketOpen.bind(this);
@@ -622,6 +624,17 @@ const sendText = function({text, userKeys = {}}, userCallback){
   };
 
   this._sendMessage(JSON.stringify(request));
+}
+
+const getWebsocketServer = function() {
+  try {
+    var matches = this._wsUrl.match(/^wss?\:\/\/([^\/:?#]+)(?:[\/:?#]|$)/i);
+    var host = matches && matches[1];
+
+    return host;
+  } catch(error) {
+    return false;
+  }
 }
 
 const speedTest = function (userCallback, bytes = 1024*256) {

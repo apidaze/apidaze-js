@@ -250,6 +250,7 @@ function _publishOwnVideoFeed(useAudio) {
 function _attachJanusVideoPlugin(callbackSuccess, callbackError){
   var self = this;
 
+  // FIXME: need to figure out how to set opaqueId
   var opaqueId = "videoroomtest-123465464574746";
   this.janusInstance.attach(
     {
@@ -507,7 +508,7 @@ function _newRemoteFeed(id, display, audio, video) {
 	this.janusInstance.attach(
 		{
 			plugin: "janus.plugin.videoroom",
-			opaqueId: "videoroomtest-123465464574746",
+			opaqueId: "videoroomtest-123465464574746", // FIXME: need to figure out how to set opaqueId
 			success: function(pluginHandle) {
 				remoteFeed = pluginHandle;
 				remoteFeed.simulcastStarted = false;
@@ -721,7 +722,7 @@ function initVideoInConferenceRoom(options = {}, callbackSuccess, callbackError)
     callback: function() {
       self.janusInitOk = true;
       self.janusInstance = new Janus({
-        server: 'wss://ws2-dev-us-nyc-1.apidaze.io:8989',
+        server: `wss://${self.clientObj.getWebsocketServer()}:8989`,
         success: function() {
           LOGGER.log('Janus Instance created');
           self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
