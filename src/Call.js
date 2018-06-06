@@ -716,9 +716,7 @@ function initVideoInConferenceRoom(options = {}, callbackSuccess, callbackError)
   LOGGER.log(`Starting video in room ${this.conferenceName}`);
   Janus.init({
     debug: "all",
-    dependencies: {
-      webRTCAdapter: WebRTCAdapter
-    },
+    dependencies: Janus.useDefaultDependencies({adapter: WebRTCAdapter}),
     callback: function() {
       self.janusInitOk = true;
       self.janusInstance = new Janus({

@@ -1,8 +1,30 @@
+/*
+	The MIT License (MIT)
+
+	Copyright (c) 2016 Meetecho
+
+	Permission is hereby granted, free of charge, to any person obtaining
+	a copy of this software and associated documentation files (the "Software"),
+	to deal in the Software without restriction, including without limitation
+	the rights to use, copy, modify, merge, publish, distribute, sublicense,
+	and/or sell copies of the Software, and to permit persons to whom the
+	Software is furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included
+	in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+	THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+	OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+	ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+	OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 // List of sessions
 Janus.sessions = {};
 
-// Screensharing Chrome Extension ID
-Janus.extensionId = "hapfgfdkleiggjjpfpenajgdnfckjpaj";
 Janus.isExtensionEnabled = function() {
 	if(window.navigator.userAgent.match('Chrome')) {
 		var chromever = parseInt(window.navigator.userAgent.match(/Chrome\/(.*) /)[1], 10);
@@ -13,10 +35,50 @@ Janus.isExtensionEnabled = function() {
 			// Older versions of Chrome don't support this extension-based approach, so lie
 			return true;
 		}
-		return Janus.checkJanusExtension();
+		return Janus.extension.isInstalled();
 	} else {
 		// Firefox of others, no need for the extension (but this doesn't mean it will work)
 		return true;
+	}
+};
+
+var defaultExtension = {
+	// Screensharing Chrome Extension ID
+	extensionId: 'hapfgfdkleiggjjpfpenajgdnfckjpaj',
+	isInstalled: function() { return document.querySelector('#janus-extension-installed') !== null; },
+	getScreen: function (callback) {
+		var pending = window.setTimeout(function () {
+			error = new Error('NavigatorUserMediaError');
+			error.name = 'The required Chrome extension is not installed: click <a href="#">here</a> to install it. (NOTE: this will need you to refresh the page)';
+			return callback(error);
+		}, 1000);
+		this.cache[pending] = callback;
+		window.postMessage({ type: 'janusGetScreen', id: pending }, '*');
+	},
+	init: function () {
+		var cache = {};
+		this.cache = cache;
+		// Wait for events from the Chrome Extension
+		window.addEventListener('message', function (event) {
+			if(event.origin != window.location.origin)
+				return;
+			if(event.data.type == 'janusGotScreen' && cache[event.data.id]) {
+				var callback = cache[event.data.id];
+				delete cache[event.data.id];
+
+				if (event.data.sourceId === '') {
+					// user canceled
+					var error = new Error('NavigatorUserMediaError');
+					error.name = 'You cancelled the request for permission, giving up...';
+					callback(error);
+				} else {
+					callback(null, event.data.sourceId);
+				}
+			} else if (event.data.type == 'janusGetScreenPending') {
+				console.log('clearing ', event.data.id);
+				window.clearTimeout(event.data.id);
+			}
+		});
 	}
 };
 
@@ -24,11 +86,12 @@ Janus.useDefaultDependencies = function (deps) {
 	var f = (deps && deps.fetch) || fetch;
 	var p = (deps && deps.Promise) || Promise;
 	var socketCls = (deps && deps.WebSocket) || WebSocket;
+
 	return {
 		newWebSocket: function(server, proto) { return new socketCls(server, proto); },
+		extension: (deps && deps.extension) || defaultExtension,
 		isArray: function(arr) { return Array.isArray(arr); },
-		checkJanusExtension: function() { return document.querySelector('#janus-extension-installed') !== null; },
-		webRTCAdapter: (deps && deps.webRTCAdapter) || adapter,
+		webRTCAdapter: (deps && deps.adapter) || adapter,
 		httpAPICall: function(url, options) {
 			var fetchOptions = {
 				method: options.verb,
@@ -96,8 +159,8 @@ Janus.useOldDependencies = function (deps) {
 	return {
 		newWebSocket: function(server, proto) { return new socketCls(server, proto); },
 		isArray: function(arr) { return jq.isArray(arr); },
-		checkJanusExtension: function() { return jq('#janus-extension-installed').length > 0; },
-		webRTCAdapter: (deps && deps.webRTCAdapter) || adapter,
+		extension: (deps && deps.extension) || defaultExtension,
+		webRTCAdapter: (deps && deps.adapter) || adapter,
 		httpAPICall: function(url, options) {
 			var payload = options.body !== undefined ? {
 				contentType: 'application/json',
@@ -184,21 +247,13 @@ Janus.init = function(options) {
 		}
 		Janus.log("Initializing library");
 
-		var usedDependencies = null;
-		if(options && options.dependencies && (!options.dependencies.isArray ||
-				!options.dependencies.webRTCAdapter || !options.dependencies.httpAPICall ||
-				!options.dependencies.checkJanusExtension || options.dependencies.newWebSocket)) {
-			// Not all dependencies have been overridden: use the default ones as a basis
-			usedDependencies = Janus.useDefaultDependencies(options.dependencies);
-		} else {
-			// This is a complete replacement of the dependencies
-			usedDependencies = options.dependencies;
-		}
+		var usedDependencies = options.dependencies || Janus.useDefaultDependencies();
 		Janus.isArray = usedDependencies.isArray;
 		Janus.webRTCAdapter = usedDependencies.webRTCAdapter;
 		Janus.httpAPICall = usedDependencies.httpAPICall;
-		Janus.checkJanusExtension = usedDependencies.checkJanusExtension;
 		Janus.newWebSocket = usedDependencies.newWebSocket;
+		Janus.extension = usedDependencies.extension;
+		Janus.extension.init();
 
 		// Helper method to enumerate devices
 		Janus.listDevices = function(callback, config) {
@@ -1909,11 +1964,10 @@ function Janus(gatewayCallbacks) {
 					}
 					// We're going to try and use the extension for Chrome 34+, the old approach
 					// for older versions of Chrome, or the experimental support in Firefox 33+
-					var cache = {};
 					function callbackUserMedia (error, stream) {
 						pluginHandle.consentDialog(false);
 						if(error) {
-							callbacks.error({code: error.code, name: error.name, message: error.message});
+							callbacks.error(error);
 						} else {
 							streamsDone(handleId, jsep, media, callbacks, stream);
 						}
@@ -1925,7 +1979,7 @@ function Janus(gatewayCallbacks) {
 							.then(function(stream) {
 								if(useAudio){
 									navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-									.then(function (audioStream) {
+										.then(function (audioStream) {
 										stream.addTrack(audioStream.getAudioTracks()[0]);
 										gsmCallback(null, stream);
 									})
@@ -1958,15 +2012,30 @@ function Janus(gatewayCallbacks) {
 							getScreenMedia(constraints, callbackUserMedia);
 						} else {
 							// Chrome 34+ requires an extension
-							var pending = window.setTimeout(
-								function () {
-									error = new Error('NavigatorUserMediaError');
-									error.name = 'The required Chrome extension is not installed: click <a href="#">here</a> to install it. (NOTE: this will need you to refresh the page)';
+							Janus.extension.getScreen(function (error, sourceId) {
+								if (error) {
 									pluginHandle.consentDialog(false);
 									return callbacks.error(error);
-								}, 1000);
-							cache[pending] = [callbackUserMedia, null];
-							window.postMessage({ type: 'janusGetScreen', id: pending }, '*');
+								}
+								constraints = {
+									audio: false,
+									video: {
+										mandatory: {
+											chromeMediaSource: 'desktop',
+											maxWidth: window.screen.width,
+											maxHeight: window.screen.height,
+											minFrameRate: media.screenshareFrameRate,
+											maxFrameRate: media.screenshareFrameRate,
+										},
+										optional: [
+											{googLeakyBucket: true},
+											{googTemporalLayeredScreencast: true}
+										]
+									}
+								};
+								constraints.video.mandatory.chromeMediaSourceId = event.data.sourceId;
+								getScreenMedia(constraints, callbackUserMedia, isAudioSendEnabled(media));
+							});
 						}
 					} else if (window.navigator.userAgent.match('Firefox')) {
 						var ffver = parseInt(window.navigator.userAgent.match(/Firefox\/(.*)/)[1], 10);
@@ -2005,46 +2074,6 @@ function Janus(gatewayCallbacks) {
 							return;
 						}
 					}
-
-					// Wait for events from the Chrome Extension
-					window.addEventListener('message', function (event) {
-						if(event.origin != window.location.origin)
-							return;
-						if(event.data.type == 'janusGotScreen' && cache[event.data.id]) {
-							var data = cache[event.data.id];
-							var callback = data[0];
-							delete cache[event.data.id];
-
-							if (event.data.sourceId === '') {
-								// user canceled
-								var error = new Error('NavigatorUserMediaError');
-								error.name = 'You cancelled the request for permission, giving up...';
-								pluginHandle.consentDialog(false);
-								callbacks.error(error);
-							} else {
-								constraints = {
-									audio: false,
-									video: {
-										mandatory: {
-											chromeMediaSource: 'desktop',
-											maxWidth: window.screen.width,
-											maxHeight: window.screen.height,
-											minFrameRate: media.screenshareFrameRate,
-											maxFrameRate: media.screenshareFrameRate,
-										},
-										optional: [
-											{googLeakyBucket: true},
-											{googTemporalLayeredScreencast: true}
-										]
-									}
-								};
-								constraints.video.mandatory.chromeMediaSourceId = event.data.sourceId;
-								getScreenMedia(constraints, callback, isAudioSendEnabled(media));
-							}
-						} else if (event.data.type == 'janusGetScreenPending') {
-							window.clearTimeout(event.data.id);
-						}
-					});
 					return;
 				}
 			}
