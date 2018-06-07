@@ -465,6 +465,8 @@ const handleVertoEvent = function(event){
       console.log("event.params.data : ", JSON.stringify(event.params.data));
 
       let data = event.params.data.data;
+      Array.isArray(data) && data.push(event.params.data.hashKey);
+
       switch(event.params.data.action){
         case "modify":
         // Who is talking events are received here
