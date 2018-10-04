@@ -1,6 +1,6 @@
 # APIdaze WebRTC JavaScript API (new version in development!)
 
-You need to create an application on APIdaze at https://developers.apidaze.io. The `API key` that matches with your application 
+You need to create an application on APIdaze at VoIP Innovations: https://voipinnovations.com/programmable. The `API key` that matches with your application 
 will be used in the various examples.
 
 # Installation
