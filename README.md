@@ -25,9 +25,9 @@ Just add a `<script/>` tag to your HTML page like so :
 
 Instantiate a client in your JavaScript code :
 
-    const client = new APIdaze.CLIENT({apiKey: "YOUR_API_KEY", wsurl: "ws2-dev-fr-par-1.apidaze.io"})
+    const client = new APIdaze.CLIENT({apiKey: "YOUR_API_KEY", wsurl: "fs-us-ny-1.apidaze.io:8082"})
 
-This will connect you to the server named `ws2-dev-fr-par-1.apidaze.io`, and check your `apiKey` there. Once `client` has been properly instanciated, you'll be allowed to make calls, conferencing and send text messages and SMS according to the instructions available in your `External Script`.
+This will connect you to the server named `fs-us-ny-1.apidaze.io`, and check your `apiKey` there. Once `client` has been properly instanciated, you'll be allowed to make calls, conferencing and send text messages and SMS according to the instructions available in your `External Script`.
    
 
 # Run the examples locally

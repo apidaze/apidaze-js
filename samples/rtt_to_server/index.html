@@ -25,7 +25,7 @@
       </div>
       <div id="serverInfoId" style="display:none">
         <h4>
-          Server hostname : ws2-dev-fr-par-1.apidaze.io
+          Server hostname : fs-us-ny-1.apidaze.io
         </h4>
         <h4>
           RTT : <span id="rttId">N/A</span> msec <span id="rttAppreciationId"></span>
@@ -48,7 +48,7 @@
         console.log("Connecting...");
         APIdazeClientObj = new APIdaze.CLIENT({
           apiKey: apikeyTextObj.value,
-          wsurl: "wss://ws2-dev-fr-par-1.apidaze.io",
+          wsurl: "wss://fs-us-ny-1.apidaze.io:8082",
           debug: true,
           onReady: function() {
             alert("Success !");
