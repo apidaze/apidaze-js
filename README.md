@@ -1,4 +1,4 @@
-# APIdaze WebRTC JavaScript API (new version in development!)
+# APIdaze WebRTC JavaScript API
 
 You need to create an application on APIdaze at VoIP Innovations: https://voipinnovations.com/programmable. The `API key` that matches with your application 
 will be used in the various examples.
@@ -19,7 +19,7 @@ Then in your .js script
 
 Just add a `<script/>` tag to your HTML page like so :
 
-    <script src="https://api4.apidaze.io/javascript/releases/APIdaze-2.0.7.js" />
+    <script src="https://api4.apidaze.io/javascript/releases/APIdaze-3.0.0-dev-master.js" />
 
 # Usage
 
@@ -43,4 +43,4 @@ Open your browser at `http://localhost:9000/`
 
 # Add to your JavaScript application
 
-API can be downloaded at https://api4.apidaze.io/javascript/releases/APIdaze-2.0.7.js
+API can be downloaded at https://api4.apidaze.io/javascript/releases/APIdaze-3.0.0-dev-master.js
