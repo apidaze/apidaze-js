@@ -39,7 +39,8 @@ Just clone the repository, install and start to test various examples locally
     npm install
     npm start
 
-Open your browser at `http://localhost:9000/`
+Open your browser at `https://localhost:9000/`. Warning about invalid certificate will be displayed. On Chrome, please click advanced > "Proceed to localhost (unsafe)".
+This is needed because browsers in order to use microphone and camera require site to use `https`, however server started with `npm start` has no certificate.
 
 # Add to your JavaScript application
 
