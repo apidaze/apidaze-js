@@ -4,11 +4,12 @@
   "description": "APIdaze JavaScript API",
   "main": "lib/APIdaze.js",
   "scripts": {
+    "build:dev": "npm run clean && rimraf ./dist && webpack --config webpack.config.dev.js && (cd dist && ln -s APIdaze-$npm_package_version-dev-master.js APIdaze-latest-dev-master.js) && (cd samples && ln -s ../dist)",
     "build:npm": "rimraf ./lib && webpack --config webpack.config.npm.js --define process.env.NODE_ENV=\"production\"",
     "build:prod": "rimraf ./dist && webpack --config webpack.config.prod.js --define process.env.NODE_ENV=\"production\"",
-    "build:dev": "npm run clean && rimraf ./dist && webpack --config webpack.config.dev.js && (cd dist && ln -s APIdaze-$npm_package_version-dev-master.js APIdaze-latest-dev-master.js) && (cd samples && ln -s ../dist)",
-    "start": "npm run build:dev && webpack-dev-server --hot --inline --config webpack.config.dev.js ",
     "clean": "rimraf ./dist && rimraf samples/dist",
+    "prettier": "prettier --write -l 'src/**/*.js'",
+    "start": "npm run build:dev && webpack-dev-server --hot --inline --config webpack.config.dev.js ",
     "test": "./node_modules/mocha/bin/mocha  --require jsdom-global/register --require babel-register tests/CLIENT.test.js"
   },
   "author": "APIdaze",
@@ -36,6 +37,7 @@
     "jsdom-global": "3.0.2",
     "mocha": "^5.2.0",
     "mock-socket": "^7.0.0",
+    "prettier": "^1.16.4",
     "rimraf": "^2.6.2",
     "should": "^13.2.3",
     "webpack": "^3.4.1",
