@@ -1,6 +1,6 @@
 import * as WebRTCAdapter from "webrtc-adapter";
 import Utils from './Utils.js';
-import Janus from './Janus.js';
+import Janus from '../lib/Janus.js';
 import Logger from './Logger.js';
 
 var __VERSION__ = process.env.VERSIONSTR // webpack defineplugin variable
