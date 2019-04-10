@@ -10,7 +10,7 @@
     "clean": "rimraf ./dist && rimraf samples/dist",
     "lint": "eslint src --fix",
     "prettier": "prettier --write -l 'src/**/*.js'",
-    "start": "npm run build:dev && webpack-dev-server --hot --inline --config webpack.config.dev.js ",
+    "start": "npm run build:dev && webpack-dev-server --hot --https --inline --config webpack.config.dev.js",
     "test": "./node_modules/mocha/bin/mocha  --require jsdom-global/register --require babel-register tests/CLIENT.test.js"
   },
   "author": "APIdaze",
