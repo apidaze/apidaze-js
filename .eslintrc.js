@@ -1,6 +1,7 @@
 module.exports = {
   env: {
     browser: true,
+    'cypress/globals': true,
   },
   extends: [
     'eslint:recommended',
@@ -8,6 +9,7 @@ module.exports = {
   ],
   plugins: [
     'import',
+    'cypress',
   ],
   parser: 'babel-eslint',
   rules: {
