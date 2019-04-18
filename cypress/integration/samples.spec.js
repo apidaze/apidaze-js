@@ -97,7 +97,7 @@ describe('examples', () => {
     cy.get('#output').should("contain", 'Ready');
   })
 
-  it.only('join conference', () => {
+  it('join conference', () => {
     cy.visit('/');
     cy.get('[data-cy="join conference"]').click();
     cy.get('#apikeyTextId').type(config.key);
