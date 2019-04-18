@@ -1,4 +1,5 @@
 node_modules
 dist
 README.publishnpm
+cypress/config.js
 
