@@ -56,7 +56,10 @@
         <input id="sendTextButtonId" type="button" value="Send">
       </div>
     </div>
-  <script type="text/javascript" src="/dist/APIdaze-latest-dev-master.js"></script></body>
+    <h3>Console output</h3>
+    <div id="output"></div>
+  <script type="text/javascript" src="/dist/APIdaze-latest-dev-master.js"></script> </body>
+  <script type="text/javascript" src="../logger.js"></script>
   <script>
     const textToSendObj = document.getElementById("textToSendId");
     const apikeyTextObj = document.getElementById("apikeyTextId");
@@ -96,6 +99,5 @@
       apikeyTextObj.disabled === true ? apikeyTextObj.disabled = false : apikeyTextObj.disabled = true;
       sendTextButtonObj.disabled === true ? sendTextButtonObj.disabled = false : sendTextButtonObj.disabled = true;
     }
-
   </script>
 </html>
