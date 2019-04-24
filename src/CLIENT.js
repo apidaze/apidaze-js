@@ -1,5 +1,4 @@
 import Call from "./Call.js";
-import Utils from "./Utils.js";
 import Logger from "./Logger.js";
 
 var __VERSION__ = process.env.VERSIONSTR; // webpack defineplugin variable
@@ -76,7 +75,7 @@ var CLIENT = function(configuration = {}) {
     this._onError({ origin: "CLIENT", message: "Please provide an apiKey" });
   }
 
-  if (!"WebSocket" in window) {
+  if (!("WebSocket" in window)) {
     this._onError({ origin: "CLIENT", message: "WebSocket not supported" });
   }
 
@@ -209,6 +208,7 @@ const handleWebSocketMessage = function(event) {
         1000
       ).toFixed(0);
 
+      // eslint-disable-next-line no-console
       console.info(
         "Speed Test: Up: " + up_kps + "kbit/s Down: " + down_kps + "kbits/s"
       );
@@ -504,6 +504,7 @@ const handleVertoEvent = function(event) {
 
   if (index >= 0) {
     if (/^conference-liveArray/.test(event.params.eventChannel)) {
+      // eslint-disable-next-line no-console
       console.log("event.params.data : ", JSON.stringify(event.params.data));
 
       let data = event.params.data.data;
@@ -616,7 +617,7 @@ const handleConferenceListResponse = function(event, callID) {
 /**
  * Log connection event, update status, call CLIENT.onDisconnected()
  */
-const handleWebSocketClose = function(err) {
+const handleWebSocketClose = function() {
   LOGGER.log("handleWebSocketClose | WebSocket closed");
   this._status = STATUS_INIT;
   this._onDisconnected();
@@ -657,9 +658,6 @@ const shutdown = function() {
 };
 
 const sendText = function({ text, userKeys = {} }, userCallback) {
-  var text = text;
-  var userKeys = typeof userKeys !== "object" ? {} : userKeys;
-
   this._sendTextCallback = userCallback;
 
   var request = {};
@@ -669,7 +667,7 @@ const sendText = function({ text, userKeys = {} }, userCallback) {
   request.params = {
     type: "sendtext_request",
     text: text,
-    userKeys: userKeys
+    userKeys: typeof userKeys !== "object" ? {} : userKeys
   };
 
   this._sendMessage(JSON.stringify(request));
@@ -677,7 +675,7 @@ const sendText = function({ text, userKeys = {} }, userCallback) {
 
 const getWebsocketServer = function() {
   try {
-    var matches = this._wsUrl.match(/^wss?\:\/\/([^\/:?#]+)(?:[\/:?#]|$)/i);
+    var matches = this._wsUrl.match(/^wss?:\/\/([^/:?#]+)(?:[/:?#]|$)/i);
     var host = matches && matches[1];
 
     return host;

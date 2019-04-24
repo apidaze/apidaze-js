@@ -6,6 +6,7 @@ var Logger = function(debug, prefix) {
     if (this._debug) {
       var args = Array.prototype.slice.call(arguments);
       args.unshift(prefix + " ");
+      // eslint-disable-next-line no-console
       console.log.apply(console, args);
     }
   };

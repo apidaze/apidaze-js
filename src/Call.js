@@ -8,9 +8,6 @@ var __VERSION__ = process.env.VERSIONSTR; // webpack defineplugin variable
 var LOG_PREFIX = "APIdaze-" + __VERSION__ + " | CLIENT | Call |";
 var LOGGER = new Logger(false, LOG_PREFIX);
 
-var APIDAZE_SCREENSHARE_CHROME_EXTENSION_ID =
-  "ecomagggebppeikobjchgmnoldifjnjj";
-
 /**
  * The callID parameter is expected to be null, except when clientObj is
  * re-attaching to an existing call in FreeSWITCH
@@ -27,7 +24,6 @@ var Call = function(clientObj, callID, params, listeners) {
   var {
     tagId = "apidaze-audio-video-container-id-" + randomString,
     audioParams = {},
-    userKeys
   } = params;
 
   var {
@@ -87,7 +83,7 @@ var Call = function(clientObj, callID, params, listeners) {
     LOGGER.log(
       "Inserting HTML5 <video/> element (audio only) to APIdaze tag " + tagId
     );
-    var audioVideoDOMContainerObj = document.createElement("div");
+    audioVideoDOMContainerObj = document.createElement("div");
     audioVideoDOMContainerObj.id = tagId;
     audioVideoDOMContainerObj.appendChild(this.remoteAudioVideo);
 
@@ -258,7 +254,7 @@ function _publishOwnVideoFeed(useAudio) {
   });
 }
 
-function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
+function _attachJanusVideoPlugin(callbackSuccess) {
   var self = this;
 
   // FIXME: need to figure out how to set opaqueId
@@ -276,7 +272,6 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
           ")"
       );
       Janus.log("  -- This is a publisher/manager");
-      var create = { request: "exists", room: self.janusVideoRoomID };
       self.janusVideoPlugin.send({
         message: {
           request: "exists",
@@ -292,7 +287,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
                 // FIXME : allow dev to add username here
                 //"display": 'phil'
               },
-              success: function(result) {
+              success: function() {
                 LOGGER.log("JOINED ROOM FOR VIDEO");
                 typeof callbackSuccess === "function" && callbackSuccess();
               }
@@ -306,7 +301,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
                 // FIXME : allow dev to add username here
                 // "display": 'phil'
               },
-              success: function(result) {
+              success: function() {
                 LOGGER.log("ROOM CREATED FOR VIDEO");
                 self.janusVideoPlugin.send({
                   message: {
@@ -315,7 +310,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
                     ptype: "publisher",
                     display: "phil"
                   },
-                  success: function(result) {
+                  success: function() {
                     LOGGER.log("JOINED ROOM FOR VIDEO");
                     typeof callbackSuccess === "function" && callbackSuccess();
                   }
@@ -332,6 +327,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
     consentDialog: function(on) {
       Janus.debug("Consent dialog should be " + (on ? "on" : "off") + " now");
       if (on) {
+        // eslint-disable-next-line no-console
         console.log("Ask consent");
         // Darken screen and show hint
         /*
@@ -347,6 +343,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
 						} });
             */
       } else {
+        // eslint-disable-next-line no-console
         console.log("Ask consent");
         // Restore screen
         // $.unblockUI();
@@ -367,7 +364,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
     onmessage: function(msg, jsep) {
       Janus.debug(" ::: Got a message (publisher) :::");
       Janus.debug(msg);
-      var event = msg["videoroom"];
+      let event = msg["videoroom"];
       Janus.debug("Event: " + event);
       if (event != undefined && event != null) {
         if (event === "joined") {
@@ -378,14 +375,14 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
           //            _publishOwnVideoFeed.call(self, false);
           // Any new feed to attach to?
           if (msg["publishers"] !== undefined && msg["publishers"] !== null) {
-            var list = msg["publishers"];
+            let list = msg["publishers"];
             Janus.debug("Got a list of available publishers/feeds:");
             Janus.debug(list);
-            for (var f in list) {
-              var id = list[f]["id"];
-              var display = list[f]["display"];
-              var audio = list[f]["audio_codec"];
-              var video = list[f]["video_codec"];
+            for (let f in list) {
+              let id = list[f]["id"];
+              let display = list[f]["display"];
+              let audio = list[f]["audio_codec"];
+              let video = list[f]["video_codec"];
               Janus.debug(
                 "  >> [" +
                   id +
@@ -406,14 +403,14 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
         } else if (event === "event") {
           // Any new feed to attach to?
           if (msg["publishers"] !== undefined && msg["publishers"] !== null) {
-            var list = msg["publishers"];
+            let list = msg["publishers"];
             Janus.debug("Got a list of available publishers/feeds:");
             Janus.debug(list);
-            for (var f in list) {
-              var id = list[f]["id"];
-              var display = list[f]["display"];
-              var audio = list[f]["audio_codec"];
-              var video = list[f]["video_codec"];
+            for (let f in list) {
+              let id = list[f]["id"];
+              let display = list[f]["display"];
+              let audio = list[f]["audio_codec"];
+              let video = list[f]["video_codec"];
               Janus.debug(
                 "  >> [" +
                   id +
@@ -429,10 +426,10 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
             }
           } else if (msg["leaving"] !== undefined && msg["leaving"] !== null) {
             // One of the publishers has gone away?
-            var leaving = msg["leaving"];
+            let leaving = msg["leaving"];
             Janus.log("Publisher left: " + leaving);
-            var remoteFeed = null;
-            for (var i = 1; i < 6; i++) {
+            let remoteFeed = null;
+            for (let i = 1; i < 6; i++) {
               if (
                 self.janusFeeds[i] != null &&
                 self.janusFeeds[i] != undefined &&
@@ -458,15 +455,15 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
             msg["unpublished"] !== null
           ) {
             // One of the publishers has unpublished?
-            var unpublished = msg["unpublished"];
+            let unpublished = msg["unpublished"];
             Janus.log("Publisher left: " + unpublished);
             if (unpublished === "ok") {
               // That's us
               self.janusVideoPlugin.hangup();
               return;
             }
-            var remoteFeed = null;
-            for (var i = 1; i < 6; i++) {
+            let remoteFeed = null;
+            for (let i = 1; i < 6; i++) {
               if (
                 self.janusFeeds[i] != null &&
                 self.janusFeeds[i] != undefined &&
@@ -510,7 +507,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
         self.janusVideoPlugin.handleRemoteJsep({ jsep: jsep });
         // Check if any of the media we wanted to publish has
         // been rejected (e.g., wrong or unsupported codec)
-        var audio = msg["audio_codec"];
+        let audio = msg["audio_codec"];
         if (
           self.janusVideoStream &&
           self.janusVideoStream.getAudioTracks() &&
@@ -522,7 +519,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
             "Our audio stream has been rejected, viewers won't hear us"
           );
         }
-        var video = msg["video_codec"];
+        let video = msg["video_codec"];
         if (
           self.janusVideoStream &&
           self.janusVideoStream.getVideoTracks() &&
@@ -541,9 +538,6 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
 
       let localVideoElement = document.querySelector(
         `#${self.janusVideoOptions.localVideoContainerId} video`
-      );
-      let remoteVideosContainerElement = document.querySelector(
-        `#${self.janusVideoOptions.remoteVideosContainerId}`
       );
 
       if (
@@ -568,6 +562,7 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
           "completed" &&
         self.janusVideoPlugin.webrtcStuff.pc.iceConnectionState !== "connected"
       ) {
+        // eslint-disable-next-line no-console
         console.log("Publishing video...");
       }
       var videoTracks = stream.getVideoTracks();
@@ -577,12 +572,14 @@ function _attachJanusVideoPlugin(callbackSuccess, callbackError) {
         videoTracks.length === 0
       ) {
         // No webcam
+        // eslint-disable-next-line no-console
         console.log("No webcam");
       } else {
+        // eslint-disable-next-line no-console
         console.log("Need webcam");
       }
     },
-    onremotestream: function(stream) {
+    onremotestream: function() {
       // The publisher stream is sendonly, we don't expect anything here
     },
     oncleanup: function() {
@@ -628,6 +625,7 @@ function _newRemoteFeed(id, display, audio, video) {
         Janus.webRTCAdapter.browserDetails.browser === "safari"
       ) {
         if (video) video = video.toUpperCase();
+        // eslint-disable-next-line no-console
         console.log(
           "Publisher is using " +
             video +
@@ -639,7 +637,8 @@ function _newRemoteFeed(id, display, audio, video) {
     },
     error: function(error) {
       Janus.error("  -- Error attaching plugin...", error);
-      bootbox.alert("Error attaching plugin... " + error);
+      // eslint-disable-next-line no-console
+      console.error("Error attaching plugin... " + error);
     },
     onmessage: function(msg, jsep) {
       Janus.debug(" ::: Got a message (subscriber) :::");
@@ -647,7 +646,8 @@ function _newRemoteFeed(id, display, audio, video) {
       var event = msg["videoroom"];
       Janus.debug("Event: " + event);
       if (msg["error"] !== undefined && msg["error"] !== null) {
-        bootbox.alert(msg["error"]);
+        // eslint-disable-next-line no-console
+        console.error(msg["error"]);
       } else if (event != undefined && event != null) {
         if (event === "attached") {
           // Subscriber created and attached
@@ -700,10 +700,10 @@ function _newRemoteFeed(id, display, audio, video) {
             if (!remoteFeed.simulcastStarted) {
               remoteFeed.simulcastStarted = true;
               // Add some new buttons
-              addSimulcastButtons(remoteFeed.rfindex);
+              // addSimulcastButtons(remoteFeed.rfindex);
             }
             // We just received notice that there's been a switch, update the buttons
-            updateSimulcastButtons(remoteFeed.rfindex, substream, temporal);
+            // updateSimulcastButtons(remoteFeed.rfindex, substream, temporal);
           }
         } else {
           // What has just happened?
@@ -726,7 +726,8 @@ function _newRemoteFeed(id, display, audio, video) {
           },
           error: function(error) {
             Janus.error("WebRTC error:", error);
-            bootbox.alert("WebRTC error... " + JSON.stringify(error));
+            // eslint-disable-next-line no-console
+            console.error("WebRTC error... " + JSON.stringify(error));
           }
         });
       }
@@ -740,12 +741,11 @@ function _newRemoteFeed(id, display, audio, video) {
           " now"
       );
     },
-    onlocalstream: function(stream) {
+    onlocalstream: function() {
       // The subscriber stream is recvonly, we don't expect anything here
     },
     onremotestream: function(stream) {
       Janus.debug("Remote feed #" + remoteFeed.rfindex);
-      var addButtons = false;
       const target = document.querySelector(
         `#${self.janusVideoOptions.remoteVideosContainerId} div[remoteid='${
           remoteFeed.rfindex
@@ -753,7 +753,6 @@ function _newRemoteFeed(id, display, audio, video) {
       );
       //if($('#remotevideo'+remoteFeed.rfindex).length === 0) {
       if (target.length === 0 || typeof target.length === "undefined") {
-        addButtons = true;
         // No remote video yet
         let innerHTML =
           '<video id="remotevideo' +
@@ -1216,10 +1215,12 @@ function setRemoteDescription(sdp) {
         sdp: sdp
       },
       function() {
+        // eslint-disable-next-line no-console
         console.log("ok");
       },
       function(error) {
-        console.log("err");
+        // eslint-disable-next-line no-console
+        console.log("err", error);
       }
     )
   );
