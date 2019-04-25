@@ -1,5 +1,13 @@
+# npm packages
 node_modules
-dist
-README.publishnpm
-cypress/config.js
 
+# builds
+dist
+
+# integration tests
+cypress/config.js
+cypress/videos/
+cypress/screenshots
+
+
+README.publishnpm
