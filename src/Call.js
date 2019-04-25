@@ -23,7 +23,7 @@ var Call = function(clientObj, callID, params, listeners) {
 
   var {
     tagId = "apidaze-audio-video-container-id-" + randomString,
-    audioParams = {},
+    audioParams = {}
   } = params;
 
   var {
@@ -1226,44 +1226,6 @@ function setRemoteDescription(sdp) {
   );
 }
 
-/**
- * Create and answer for FreeSWITCH
- *
- * This function is called when FeeSWICTH sent its SDP first. In the case
- * where we need to re attach a verto session to an existing call, this
- * function will be called.
- */
-function createAnswer() {
-  var offerOptions = {
-    offerToReceiveAudio: 1,
-    offerToReceiveVideo: 1
-  };
-
-  var self = this;
-
-  this.peerConnection
-    .setRemoteDescription(
-      new RTCSessionDescription({
-        type: "offer",
-        sdp: self.clientObj._reattachParams.sdp
-      })
-    )
-    .then(function() {
-      LOGGER.log("RTCSessionDescription created");
-      return self.peerConnection.createAnswer();
-    })
-    .then(function(answer) {
-      LOGGER.log("createAnswer returned successfully");
-      return self.peerConnection.setLocalDescription(answer);
-    })
-    .then(function() {
-      LOGGER.log("setLocalDescription returned successfully");
-    })
-    .catch(function(err) {
-      LOGGER.log("Error : " + JSON.stringify(err));
-    });
-}
-
 function attachStreamToPeerConnection() {
   let self = this;
   this.localAudioVideoStream.getTracks().forEach(function(track) {
@@ -1353,7 +1315,6 @@ function startCall() {
  */
 function handleHangup() {
   LOGGER.log("Call hungup");
-  let self = this;
 
   if (
     this.extraLocalAudioVideoStream &&
@@ -1392,7 +1353,7 @@ function handleRoomChatMessage(message) {
   delete message.type;
 
   typeof this.userRoomChatMessageCallback === "function" &&
-    this.userRoomChatMessageCallback(msg);
+    this.userRoomChatMessageCallback(message);
 }
 
 function handleMembersInitialList(members) {
@@ -1421,7 +1382,6 @@ function handleRoomTalking(dataArray) {
 
 function handleRoomAdd(dataArray) {
   LOGGER.log("Add event : " + JSON.stringify(dataArray));
-  var status = JSON.parse(dataArray[4]);
   var event = {
     type: "room.add",
     conferenceMemberID: parseInt(dataArray[0]).toString(),
@@ -1436,7 +1396,6 @@ function handleRoomAdd(dataArray) {
 
 function handleRoomDel(dataArray) {
   LOGGER.log("Del event : " + JSON.stringify(dataArray));
-  var status = JSON.parse(dataArray[4]);
   var event = {
     type: "room.del",
     conferenceMemberID: parseInt(dataArray[0]).toString(),
@@ -1449,19 +1408,14 @@ function handleRoomDel(dataArray) {
     this.userRoomDelCallback(event);
 }
 
-function handleRinging(userCallback) {
+function handleRinging() {
   LOGGER.log("Ringing");
   typeof this.userRingingCallback === "function" && this.userRingingCallback();
 }
 
-function handleAnswer(userCallback) {
+function handleAnswer() {
   LOGGER.log("Answer");
   typeof this.userAnswerCallback === "function" && this.userAnswerCallback();
-}
-
-function handleGUMSuccess(stream) {
-  LOGGER.log("WebRTC Ok");
-  this.localAudioVideoStream = stream;
 }
 
 function handleGUMError(error) {
