@@ -133,6 +133,7 @@ describe('examples', () => {
     cy.get('#output').should("contain", 'Call | Received remote stream');
     cy.get('#output').should("contain", 'Call | ICE State : connected');
     cy.get('#output').should("contain", 'Call | ICE State : completed');
+    cy.wait(500);
     cy.get('#output').should("contain", '"method":"event","params":{"pvtData":{"action":"conference-liveArray-join"');
     cy.get('#output').should("contain", 'Received event of type channelPvtData');
     cy.get('#output').should("contain", 'Event channel UUID');
