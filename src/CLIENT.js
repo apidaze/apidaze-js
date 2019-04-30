@@ -355,12 +355,12 @@ const handleWebSocketMessage = function(event) {
     return;
   }
 
-  let callID = json.params.callID;
+  let callID = json.params && json.params.callID;
   let index = this._callArray.findIndex(function(callObj) {
     return callObj.callID === callID;
   });
 
-  if (index < 0) {
+  if (json.params && json.params.callID && index < 0) {
     LOGGER.log("Cannot find call with callID " + callID);
   }
 
