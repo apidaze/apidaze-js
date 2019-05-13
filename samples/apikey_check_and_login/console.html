@@ -26,7 +26,7 @@ var APIdazeClientObj = new APIdaze.CLIENT({
     userid: userid
   },
   onReady: function(sessionObj) {
-    alert("Logged in as " + sessionObj.id + " !");
+    alert("Logged in with session id " + sessionObj.id + " !");
   },
   onError: function(errorMessage){
     alert("Got error : " + errorMessage);
