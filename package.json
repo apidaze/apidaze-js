@@ -4,7 +4,7 @@
   "description": "APIdaze JavaScript API",
   "main": "lib/APIdaze.js",
   "scripts": {
-    "build:dev": "npm run clean && rimraf ./dist && webpack --config webpack.config.dev.js && (cd dist && ln -s APIdaze-$npm_package_version-dev-master.js APIdaze-latest-dev-master.js) && (cd samples && ln -s ../dist)",
+    "build:dev": "npm run clean && rimraf ./dist && webpack --config webpack.config.dev.js && (cd dist && ln -s APIdaze-$npm_package_version-dev.js APIdaze-latest-dev.js) && (cd samples && ln -s ../dist)",
     "build:npm": "rimraf ./lib/APIdaze.js && webpack --config webpack.config.npm.js --define process.env.NODE_ENV=\"production\"",
     "build:prod": "rimraf ./dist && webpack --config webpack.config.prod.js --define process.env.NODE_ENV=\"production\"",
     "clean": "rimraf ./dist && rimraf samples/dist",
