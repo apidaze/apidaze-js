@@ -34,10 +34,9 @@ describe('examples', () => {
     cy.get('#output').should("contain", `handleWebSocketMessage | C->S : {"wsp_version":"1","method":"ping","params":{"apiKey":"${config.key}","sessid":null,"userKeys":{"command":"auth","userid":"username"}}}`);
     cy.get('#output').should("contain", 'message":"pong"');
     cy.get('#output').should("contain", '"method":"verto.clientReady"');
-    cy.get('#output').should("contain", '"id":"username"');
     cy.get('#output').should("contain", 'Ready');
     cy.wait(100).then(() => {
-      expect(stub.getCall(0)).to.be.calledWith('Logged in as username !');
+      expect(stub.getCall(0).args[0]).to.match(/Logged in with session id /);
     });
   })
 
@@ -93,7 +92,6 @@ describe('examples', () => {
     cy.get('#output').should("contain", `handleWebSocketMessage | C->S : {"wsp_version":"1","method":"ping","params":{"apiKey":"${config.key}","sessid":null,"userKeys":{"command":"auth","userid":"username"}}}`);
     cy.get('#output').should("contain", 'message":"pong"');
     cy.get('#output').should("contain", '"method":"verto.clientReady"');
-    cy.get('#output').should("contain", '"id":"username"');
     cy.get('#output').should("contain", 'Ready');
   })
 
@@ -133,7 +131,6 @@ describe('examples', () => {
     cy.get('#output').should("contain", 'Call | Received remote stream');
     cy.get('#output').should("contain", 'Call | ICE State : connected');
     cy.get('#output').should("contain", 'Call | ICE State : completed');
-    cy.wait(500);
     cy.get('#output').should("contain", '"method":"event","params":{"pvtData":{"action":"conference-liveArray-join"');
     cy.get('#output').should("contain", 'Received event of type channelPvtData');
     cy.get('#output').should("contain", 'Event channel UUID');
