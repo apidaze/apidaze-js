@@ -360,7 +360,7 @@ const handleWebSocketMessage = function(event) {
     return callObj.callID === callID;
   });
 
-  if (json.params && json.params.callID && index < 0) {
+  if (callID && index < 0) {
     LOGGER.log("Cannot find call with callID " + callID);
   }
 
