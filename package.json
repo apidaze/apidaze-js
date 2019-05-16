@@ -13,7 +13,8 @@
     "lint": "eslint src --fix",
     "prettier": "prettier --write -l 'src/**/*.js'",
     "start": "npm run build:dev && webpack-dev-server --hot --https --inline --config webpack.config.dev.js",
-    "test": "./node_modules/mocha/bin/mocha  --require jsdom-global/register --require babel-register tests/CLIENT.test.js"
+    "test": "./node_modules/mocha/bin/mocha  --require jsdom-global/register --require babel-register tests/CLIENT.test.js",
+    "test:all": "npm run prettier; npm run lint && npm run test && npm run cypress:run"
   },
   "author": "APIdaze",
   "license": "ISC",
