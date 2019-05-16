@@ -1,47 +1,64 @@
-# APIdaze WebRTC JavaScript API
+# [APIdaze](https://voipinnovations.com/programmable) Javascript API
 
-You need to create an application on APIdaze at VoIP Innovations: https://voipinnovations.com/programmable. The `API key` that matches with your application 
-will be used in the various examples.
+This library provides video conferences, automated voice responses, selecting dialtone option and [more](https://voipinnovations.com/programmable).\
+User will not be able to select phone number. Instead he will call an "External Script" which is a XML definition of what will happen during the call. External Scripts are stored on APIdaze server.
+
+For use cases where user can type phone number consider [REST API](https://vi-api.trybelabs.com/?version=latest).
 
 # Installation
 
-You may install this library either as an NPM module or by downloading the JavaScript file.
+Either execute in your project directory\
+`npm install apidaze-js`\
+and add to your code\
+`const APIdaze = require('apidaze-js')`
 
-## As an NPM module
-
-    npm install apidaze-js
-
-Then in your .js script
-
-    const APIdaze = require('apidaze-js')
-
-## JavaScript API
-
-Just add a `<script/>` tag to your HTML page like so :
-
-    <script src="https://api4.apidaze.io/javascript/releases/APIdaze-3.0.0-dev-master.js" />
+or add a html tag\
+`<script src="https://api4.apidaze.io/javascript/releases/APIdaze-3.0.0-dev-master.js" />`
 
 # Usage
 
-Instantiate a client in your JavaScript code :
+Make sure you can access [this page](https://backoffice.voipinnovations.com/ProgrammableTelco/ExternalScripts.aspx) that is used to define External Scripts.\
+If you don't have account, you can create one [here](https://backoffice.voipinnovations.com/SignUp/Packages.aspx).\
+To initialize a client, follow [these instructions](https://vi-api.trybelabs.com/?version=latest#6bf958bf-5ab5-6db9-7dd5-21f415ae413d).\
+And to read more about possibilites of External Scripts, go [here](https://vi-api.trybelabs.com/?version=latest#21716538-c967-9c7b-bb24-60ca07bc004a).
 
-    const client = new APIdaze.CLIENT({apiKey: "YOUR_API_KEY", wsurl: "fs-us-ny-1.apidaze.io:8082"})
+# How to run examples
 
-This will connect you to the server named `fs-us-ny-1.apidaze.io`, and check your `apiKey` there. Once `client` has been properly instanciated, you'll be allowed to make calls, conferencing and send text messages and SMS according to the instructions available in your `External Script`.
-   
+1. Visit https://backoffice.voipinnovations.com/ProgrammableTelco/ExternalScripts.aspx
+2. Click create new script button
+3. Enter name of your choice and this content of External Script
+```xml
+<document>
+  <work>
+    <answer />
+    <wait>1</wait>
+    <speak>Welcome, you are joining the conference.</speak>
+    <conference>test</conference>
+    <hangup />
+  </work>
+</document>
+```
+![](docs/images/run-examples-01.png)
+4. Click create script, wait for cofirmation, close the editor\
+5. Find script by the name and copy the visible apiKey (c7fee939 on screenshot)
+![](docs/images/run-examples-02.png)
+6. Clone repository `git clone https://github.com/apidaze/apidaze-js.git`\
+7. Install npm dependencies `cd apidaze-js` and `npm install`\
+8. Start a webserver `npm run start`\
+9. Open https://localhost:9000 \
+10. Warning about missing certificate will be displayed, click "advanced" and "proceed to localhost (unsafe)"\
+11. Select "API key check" from list of examples\
+12. Type apiKey from step 4. and click "check" button
 
-# Run the examples locally
+If all went good, result should look like this
 
-Just clone the repository, install and start to test various examples locally
+![](docs/images/run-examples-03.png)
 
-    git clone https://github.com/apidaze/apidaze-js.git
-    cd apidaze-js
-    npm install
-    npm start
+# How to contribute
 
-Open your browser at `https://localhost:9000/`. Warning about invalid certificate will be displayed. On Chrome, please click advanced > "Proceed to localhost (unsafe)".
-This is needed because browsers in order to use microphone and camera require site to use `https`, however server started with `npm start` has no certificate.
-
-# Add to your JavaScript application
-
-API can be downloaded at https://api4.apidaze.io/javascript/releases/APIdaze-3.0.0-dev-master.js
+1. Fork this repository
+2. Make a copy of file `cypress/config.template.js` named `cypress/config.js` and inside its content write apiKey from step 4. of [How to run examples](#how-to-run-examples)
+3. Work on your change
+4. When ready, please verify that code is matching linter and tests are passing by running `npm run start` and in separate console: `npm run test:all`
+5. If integration tests are failing use `npm run cypress` to find a reason
+6. When all tests are passing create a pull request
