@@ -50,10 +50,16 @@ Utils.generateGUID =
  * positive integers as room identifiers
  */
 Utils.hashCode = function(s) {
-  return s.split("").reduce(function(a, b) {
+  let result = s.split("").reduce(function(a, b) {
     a = (a << 5) - a + b.charCodeAt(0);
     return a & a;
   }, 0);
+
+  if (result < 0) {
+    result = result >>> 0;
+  }
+
+  return result;
 };
 
 export default Utils;
