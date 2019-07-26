@@ -19,7 +19,8 @@ var CLIENT = function(configuration = {}) {
     onError,
     onExternalMessageReceived,
     debug,
-    userKeys = {}
+    userKeys = {},
+    iceServers
   } = configuration;
 
   /**
@@ -98,6 +99,7 @@ var CLIENT = function(configuration = {}) {
   this._sessid = sessid;
   this._userKeys = userKeys;
   this._wsUrl = wsurl;
+  this._iceServers = iceServers;
 
   this._websocket = new WebSocket(wsurl);
   this._websocket.onopen = handleWebSocketOpen.bind(this);
