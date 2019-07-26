@@ -883,6 +883,7 @@ function initVideoInConferenceRoom(
       self.janusInitOk = true;
       self.janusInstance = new Janus({
         server: `wss://${self.clientObj.getWebsocketServer()}:8989`,
+        iceServers: self.clientObj._iceServers,
         success: function() {
           LOGGER.log("Janus Instance created");
           self.janusVideoRoomID = Utils.hashCode(self.conferenceName);
