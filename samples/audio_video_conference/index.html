@@ -69,19 +69,16 @@
       </p>
       <div>
         <span>API key : </span>
-        <input id="apikeyTextId" type="text" placeholder="e.g. : 23dh4r56">
-        <input id="checkButtonId" type="button" value="Check">
+        <input id="apikeyTextId" type="text" value="" placeholder="e.g. : 23dh4r56">
+        <input id="checkButtonId" type="button" value="Connect">
       </div>
       <div>
-        <input id="joinRoomButtonId" type="button" disabled="true" style="width: 90px" value="Join Room" class="kick_button btn btn-default" />
+        <input id="joinRoomButtonId" type="button" disabled="true" style="width: 90px" value="Call" class="kick_button btn btn-default" />
         <input id="startVideoInRoomButtonId" type="button" disabled="true" style="width: 90px" value="Start Video" class="btn btn-default" />
-        <input id="leaveRoomButtonId" type="button" disabled="true" style="width: 90px" value="Leave Room" class="btn btn-default" />
+        <input id="leaveRoomButtonId" type="button" disabled="true" style="width: 90px" value="Hangup" class="btn btn-default" />
       </div>
     </div>
-  <h3>Console output</h3>
-  <div id="output"></div>
-  <script type="text/javascript" src="/dist/APIdaze-latest-dev.js"></script></body>
-  <script type="text/javascript" src="../logger.js"></script>
+  <script type="text/javascript" src="https://api4.apidaze.io/javascript/releases/APIdaze-latest-dev-master.js"></script></body>
   <script>
     const apikeyTextObj = document.getElementById('apikeyTextId');
     const checkButtonObj = document.getElementById('checkButtonId');
@@ -98,7 +95,7 @@
 
         APIdazeClientObj = new APIdaze.CLIENT({
           apiKey: apikeyTextObj.value,
-          wsurl: "wss://fs-us-ny-1.apidaze.io:8082",
+          wsurl: "wss://fs-de-fra-2.apidaze.io:8082",
           debug: true,
           onReady: function(sessionObj) {
             joinRoomButtonObj.disabled = false;
