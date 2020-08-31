@@ -43,23 +43,4 @@ Utils.generateGUID =
         });
       };
 
-/**
- * Generates an unsigned 32 bits integer out of a string.
- *
- * Needed to map FreeSWITCH room name to Janus as Janus only accepts
- * positive integers as room identifiers
- */
-Utils.hashCode = function(s) {
-  let result = s.split("").reduce(function(a, b) {
-    a = (a << 5) - a + b.charCodeAt(0);
-    return a & a;
-  }, 0);
-
-  if (result < 0) {
-    result = result >>> 0;
-  }
-
-  return result;
-};
-
 export default Utils;
