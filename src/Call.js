@@ -141,6 +141,10 @@ var Call = function(clientObj, callID, params, listeners) {
   this.startLocalAudio = startLocalAudio;
   this.stopLocalVideo = stopLocalVideo;
   this.startLocalVideo = startLocalVideo;
+  this.enumerateDevices = enumerateDevices;
+  this.enumerateAudioDevices = enumerateAudioDevices;
+  this.setAudioInputDevice = setAudioInputDevice;
+  this.setAudioOutputDevice = setAudioOutputDevice;
 
   if (this.clientObj._websocket.readyState !== this.clientObj._websocket.OPEN) {
     throw { message: "WebSocket is closed" };
@@ -308,6 +312,149 @@ var Call = function(clientObj, callID, params, listeners) {
       });
   }
 };
+
+/**
+ * Get the media devices
+ *
+ * @param {Object} options - Options to indicate what kind of devices should be returned
+ * @param {Boolean} [options.audio] - Indicates if audio devices should be included
+ * @param {Boolean} [options.video] - Indicates if video devices should be included
+ *
+ * @return {Promise} Promise object to provide media devices
+ */
+function enumerateDevices({ audio = true, video = false }) {
+  return new Promise((resolve, reject) => {
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then((devices) => {
+        const filteredDevices = devices.reduce((reducedDevices, currentDevice) => {
+          const { kind } = currentDevice;
+
+          if (audio && (kind === 'audioinput' || kind === 'audiooutput')) {
+            return [ ...reducedDevices, currentDevice ];
+          }
+
+          if (video && kind === 'videoinput') {
+            return [ ...reducedDevices, currentDevice ];
+          }
+
+          return reducedDevices;
+        }, []);
+
+        resolve(filteredDevices);
+      })
+      .catch(reject);
+  });
+}
+
+/**
+ * Get the audio devices
+ *
+ * @return {Promise} Promise object to provide audio media devices
+ */
+function enumerateAudioDevices() {
+  return enumerateDevices({ audio: true });
+}
+
+/**
+ * Sets the ID of the audio device to use for output on the given mediaElement
+ *
+ * @param {HTMLMediaElement} mediaElement - Media element to set an audio output device for
+ * @param {string} sinkId - The MediaDeviceInfo.deviceId of the audio output device.
+ *
+ * @return {Promise}
+ */
+function attachSinkId(mediaElement, sinkId) {
+  return new Promise((resolve, reject) => {
+    if (typeof mediaElement.sinkId !== 'undefined') {
+      mediaElement.setSinkId(sinkId)
+        .then(resolve)
+        .catch(reject);
+    } else {
+      reject('The browser does not support output device selection.');
+    }
+  });
+}
+
+/**
+ * Sets the ID of the audio device to use for input in the bounded call
+ *
+ * @param {string} deviceId - The MediaDeviceInfo.deviceId of the audio input device.
+ *
+ * @return {Promise}
+ */
+function setAudioInputDevice(deviceId) {
+  return new Promise((resolve, reject) => {
+    navigator.mediaDevices
+      .getUserMedia({
+        audio: {
+          deviceId: {
+            exact: deviceId
+          }
+        }
+      })
+      .then((stream) => {
+        const audioTracks = stream.getAudioTracks();
+        const newAudioTrack = audioTracks[0];
+
+        const audioSender = this.peerConnection
+          .getSenders()
+          .find((sender) => sender.track.kind === 'audio');
+
+        audioSender
+          .replaceTrack(newAudioTrack)
+          .then(resolve)
+          .catch(reject);
+      })
+      .catch(reject);
+  });
+}
+
+/**
+ * Sets the ID of the video device to use for input in the bounded call
+ *
+ * @param {string} deviceId - The MediaDeviceInfo.deviceId of the video input device.
+ *
+ * @return {Promise}
+ */
+// eslint-disable-next-line no-unused-vars
+function setVideoInputDevice(deviceId) {
+  return new Promise((resolve, reject) => {
+    navigator.mediaDevices
+      .getUserMedia({
+        video: {
+          deviceId: {
+            exact: deviceId
+          }
+        }
+      })
+      .then((stream) => {
+        const videoTracks = stream.getVideoTracks();
+        const newVideoTrack = videoTracks[0];
+
+        const videoSender = this.peerConnection
+          .getSenders()
+          .find((sender) => sender.track.kind === 'Video');
+
+        videoSender
+          .replaceTrack(newVideoTrack)
+          .then(resolve)
+          .catch(reject);
+      })
+      .catch(reject);
+  });
+}
+
+/**
+ * Sets the ID of the audio device to use for output in the bounded call
+ *
+ * @param {string} device - The MediaDeviceInfo.deviceId of the audio output device.
+ *
+ * @return {Promise}
+ */
+function setAudioOutputDevice(deviceId) {
+  return attachSinkId(this.remoteAudioVideo, deviceId);
+}
 
 function stopLocalAudio() {
   this.localAudioVideoStream.getAudioTracks().forEach(function(track) {
@@ -619,10 +766,10 @@ function setRemoteDescription(sdp) {
         sdp: sdp
       },
       function() {
-        console.log("ok");
+        Logger.log("ok");
       },
       function(error) {
-        console.log("err");
+        Logger.log("err", error);
       }
     )
   );
