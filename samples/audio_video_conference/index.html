@@ -3,187 +3,208 @@
   <head>
     <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
     <title>Sample App</title>
+
+    <style>
+      .hidden {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
     <div id='root'>
-      <h1>Connect to conference room, in audio/video</h1>
-      <h3>
-        This example shows how to connect to an audio/video conference room. Check your JavaScript console while testing to see what's happening in the background !
-      </h3>
-      <p>
-        The first step is to join the conference room in audio, then the JavaScript
-        object that manages the conference room can be used to "upgrade" to a video
-        enabled conference room.
-      </p>
-      <p>
-      Join a conference room in audio mode : <code>CLIENT.call(callDetailsObject, callbackObject)</code>.
-      This JavaScript call will trigger your <code>External Script</code> (and
-      pass the <code>callDetailsObject</code> as URL parameters), that must
-      return an XML string instructing APIdaze to start a conference room
-      (the name of the conference is managed from the <code>External Script</code>):
-      </p>
-      <p>
-        <code>callDetailsObject</code>
-        <pre>
-        {
-          command : "JoinRoom", // optional
-          userName : "guest",   // optional
-        }
-        </pre>
-      </p>
-      <p>
-        <code>callbackObject</code> Contains a list of functions that execute when conference events are triggered (join/leeave events, initial members list, etc.) :
-        <pre>
-        {
-          onRoomMembersInitialList: function(members) {
-            console.log('Got members for this room : ' + JSON.stringify(members));
-          },
-          onRoomAdd: function(member) {
-            console.log('New member joined room : ' + JSON.stringify(member));
-          },
-          onRoomDel: function(member) {
-            console.log('Member left room : ' + JSON.stringify(member));
-          },
-          onRoomTalking: function(member) {
-            console.log('Start/stop talking event from a member : ' + JSON.stringify(member));
-          },
-          onHangup: function(){
-            console.log('I left the room');
-          }
-        }
-        </pre>
-      </p>
-      <p>
-        <code>XML return from External Script</code>
-        <pre>
-        &lt;document&gt;
-          &lt;work&gt;
-            &lt;answer /&gt;
-            &lt;wait&gt;1&lt;/wait&gt;
-            &lt;speak&gt;Welcome, you are joining the conference.&lt;/speak&gt;
-            &lt;conference&gt;test&lt;/conference&gt;
-            &lt;hangup /&gt;
-          &lt;/work&gt;
-        &lt;/document&gt;
-        </pre>
-      </p>
       <div>
+        <h1>Connect to conference room, in audio</h1>
+        <h3>
+          This example shows how to connect to an audio conference room. Check your JavaScript console while testing to see what's happening in the background !
+        </h3>
+        <p>
+        Join a conference room in audio mode : <code>CLIENT.call(callDetailsObject, callbackObject)</code>.
+        This JavaScript call will trigger your <code>External Script</code> (and
+        pass the <code>callDetailsObject</code> as URL parameters), that must
+        return an XML string instructing APIdaze to start a conference room
+        (the name of the conference is managed from the <code>External Script</code>):
+        </p>
+        <p>
+          <code>callDetailsObject</code>
+          <pre>
+          {
+            command : "JoinRoom", // optional
+            userName : "guest",   // optional
+          }
+          </pre>
+        </p>
+        <p>
+          <code>callbackObject</code> Contains a list of functions that execute when conference events are triggered (join/leeave events, initial members list, etc.) :
+          <pre>
+          {
+            onRoomMembersInitialList: function(members) {
+              console.log('Got members for this room : ' + JSON.stringify(members));
+            },
+            onRoomAdd: function(member) {
+              console.log('New member joined room : ' + JSON.stringify(member));
+            },
+            onRoomDel: function(member) {
+              console.log('Member left room : ' + JSON.stringify(member));
+            },
+            onRoomTalking: function(member) {
+              console.log('Start/stop talking event from a member : ' + JSON.stringify(member));
+            },
+            onHangup: function(){
+              console.log('I left the room');
+            }
+          }
+          </pre>
+        </p>
+        <p>
+          <code>XML return from External Script</code>
+          <pre>
+          &lt;document&gt;
+            &lt;work&gt;
+              &lt;answer /&gt;
+              &lt;wait&gt;1&lt;/wait&gt;
+              &lt;speak&gt;Welcome, you are joining the conference.&lt;/speak&gt;
+              &lt;conference&gt;test&lt;/conference&gt;
+              &lt;hangup /&gt;
+            &lt;/work&gt;
+          &lt;/document&gt;
+          </pre>
+        </p>
+      </div>
+      <div style="margin-bottom: 5px;">
         <span>API key : </span>
         <input id="apikeyTextId" type="text" value="" placeholder="e.g. : 23dh4r56">
         <input id="checkButtonId" type="button" value="Connect">
       </div>
       <div>
-        <input id="joinRoomButtonId" type="button" disabled="true" style="width: 90px" value="Call" class="kick_button btn btn-default" />
-        <input id="startVideoInRoomButtonId" type="button" disabled="true" style="width: 90px" value="Start Video" class="btn btn-default" />
-        <input id="leaveRoomButtonId" type="button" disabled="true" style="width: 90px" value="Hangup" class="btn btn-default" />
+        <input id="joinRoomButtonId" type="button" disabled="true" style="width: 90px" value="Join Room" class="kick_button btn btn-default" />
+        <input id="leaveRoomButtonId" type="button" disabled="true" style="width: 90px" value="Leave Room" class="btn btn-default" />
+      </div>
+      <div id="mediaDevices" class="hidden">
+        <br>
+        <div class="select">
+          <label for="audioSource">Audio input source: </label>
+          <select id="audioSource"></select>
+        </div>
+
+        <div class="select">
+          <label for="audioOutput">Audio output destination: </label>
+          <select id="audioOutput"></select>
+        </div>
+
+        <p>
+          <strong>Note:</strong> The actual input and output devices are displayed if the permissions are given to retrieve media devices. (may require reloading the page)
+        </p>
       </div>
     </div>
-  <script type="text/javascript" src="https://api4.apidaze.io/javascript/releases/APIdaze-latest-dev-master.js"></script></body>
-  <script>
-    const apikeyTextObj = document.getElementById('apikeyTextId');
-    const checkButtonObj = document.getElementById('checkButtonId');
-    const joinRoomButtonObj = document.getElementById('joinRoomButtonId');
-    const startVideoInRoomButtonObj = document.getElementById('startVideoInRoomButtonId');
-    const leaveRoomButtonObj = document.getElementById('leaveRoomButtonId');
 
-    var APIdazeClientObj = null;
-    var conferenceCall = null;
+    <script type="text/javascript" src="/lib/APIdaze.js"></script>
+    <script>
+      const apikeyTextObj = document.getElementById('apikeyTextId');
+      const checkButtonObj = document.getElementById('checkButtonId');
+      const joinRoomButtonObj = document.getElementById('joinRoomButtonId');
+      const leaveRoomButtonObj = document.getElementById('leaveRoomButtonId');
+      const audioInputSelect = document.querySelector('select#audioSource');
+      const audioOutputSelect = document.querySelector('select#audioOutput');
+      const selectors = [audioInputSelect, audioOutputSelect];
 
-    checkButtonObj.onclick = function() {
-      if (/^[a-zA-Z0-9]{8}$/.test(apikeyTextObj.value)) {
-        console.log("Checking...");
+      var APIdazeClientObj = null;
+      var conferenceCall = null;
 
-        APIdazeClientObj = new APIdaze.CLIENT({
-          apiKey: apikeyTextObj.value,
-          wsurl: "wss://fs-de-fra-2.apidaze.io:8082",
-          debug: true,
-          onReady: function(sessionObj) {
-            joinRoomButtonObj.disabled = false;
-          },
-          onError: function(errorMessage){
-            alert("Got error : " + errorMessage);
+      function gotDevices(deviceInfos) {
+        for (const deviceInfo of deviceInfos) {
+          const option = document.createElement('option');
+          option.value = deviceInfo.deviceId;
+
+          if (deviceInfo.kind === 'audioinput') {
+            option.text = deviceInfo.label || `microphone ${audioInputSelect.length + 1}`;
+            audioInputSelect.appendChild(option);
+          } else if (deviceInfo.kind === 'audiooutput') {
+            option.text = deviceInfo.label || `speaker ${audioOutputSelect.length + 1}`;
+            audioOutputSelect.appendChild(option);
           }
-        });
-      } else {
-        alert("Wrong API key or illegal character in User name");
+        }
       }
-    }
 
-    joinRoomButtonObj.onclick = function(){
-      joinRoomButtonObj.disabled = true;
-      conferenceCall = APIdazeClientObj.call(
-        {
-          command: "joinRoom",
-          userName: "guest",
-        },
-        {
-          onRoomMembersInitialList: function(members) {
-            console.log('Got members for this room : ' + JSON.stringify(members));
-            joinRoomButtonObj.disabled = true;
-            leaveRoomButtonObj.disabled = false;
-            startVideoInRoomButtonObj.disabled = false;
+      function changeAudioDestination(event) {
+        const audioDestination = event.target.value;
+        conferenceCall.setAudioOutputDevice(audioDestination);
+      }
+
+      audioOutputSelect.onchange = changeAudioDestination;
+      audioOutputSelect.disabled = !('sinkId' in HTMLMediaElement.prototype);
+
+      audioInputSelect.onchange = function (event) {
+        const audioInputDeviceId = event.target.value;
+
+        conferenceCall.setAudioInputDevice(audioInputDeviceId);
+      };
+
+      checkButtonObj.onclick = function() {
+        if (/^[a-zA-Z0-9]{8}$/.test(apikeyTextObj.value)) {
+          console.log("Checking...");
+
+          APIdazeClientObj = new APIdaze.CLIENT({
+            apiKey: apikeyTextObj.value,
+            wsurl: "wss://fs-de-fra-2.apidaze.io:8082",
+            debug: true,
+            onReady: function(sessionObj) {
+              joinRoomButtonObj.disabled = false;
+            },
+            onError: function(errorMessage){
+              alert("Got error : " + errorMessage);
+            }
+          });
+        } else {
+          alert("Wrong API key or illegal character in User name");
+        }
+      }
+
+      joinRoomButtonObj.onclick = function(){
+        conferenceCall = APIdazeClientObj.call(
+          {
+            command: "joinRoom",
+            userName: "guest",
           },
-          onRoomAdd: function(member) {
-            console.log('New member joined room : ' + JSON.stringify(member));
-          },
-          onRoomDel: function(member) {
-            console.log('Member left room : ' + JSON.stringify(member));
-          },
-          onRoomTalking: function(member) {
-            console.log('Start/stop talking event from a member : ' + JSON.stringify(member));
-          },
-          onHangup: function(){
-            console.log('I left the room');
-            joinRoomButtonObj.disabled = false;
-            leaveRoomButtonObj.disabled = true;
-            startVideoInRoomButtonObj.disabled = true;
+          {
+            onRoomMembersInitialList: function(members) {
+              console.log('Got members for this room : ' + JSON.stringify(members));
+              joinRoomButtonObj.disabled = true;
+              leaveRoomButtonObj.disabled = false;
+            },
+            onRoomAdd: function(member) {
+              console.log('New member joined room : ' + JSON.stringify(member));
+            },
+            onRoomDel: function(member) {
+              console.log('Member left room : ' + JSON.stringify(member));
+            },
+            onRoomTalking: function(member) {
+              console.log('Start/stop talking event from a member : ' + JSON.stringify(member));
+            },
+            onHangup: function(){
+              console.log('I left the room');
+              joinRoomButtonObj.disabled = false;
+              leaveRoomButtonObj.disabled = true;
+            },
+            onAnswer: function() {
+              // populate user media devices
+              conferenceCall
+                .enumerateAudioDevices()
+                .then(gotDevices);
+
+              document.querySelector('#mediaDevices.hidden').classList.remove('hidden');
+            }
           }
-        });
-    }
+        );
+      }
 
-    const startVideo = function(){
-      startVideoInRoomButtonObj.disabled = true;
-      startVideoInRoomButtonObj.setAttribute('value', '...');
+      leaveRoomButtonObj.onclick = function() {
+        leaveRoomButtonObj.disabled = true;
+        joinRoomButtonObj.disabled = false;
 
-      conferenceCall.initVideoInConferenceRoom({
-        localVideoContainerId: 'myVideoContainerId', // Optional, not used here
-        remoteVideosContainerId: 'remoteVideosContainerId' // Optional, not used here
-      },
-        function() {
-          console.log('We joined the room, now publish our video stream there');
-          conferenceCall.publishMyVideoInRoom();
+        conferenceCall.hangup();
+        conferenceCall = null;
+      }
 
-          startVideoInRoomButtonObj.disabled = false;
-          startVideoInRoomButtonObj.setAttribute('value', 'Detach Video');
-          startVideoInRoomButtonObj.onclick = detachVideo;
-        },
-        function(err) {
-          console.log('Failed to join room, error :', err);
-          startVideoInRoomButtonObj.disabled = false;
-          startVideoInRoomButtonObj.setAttribute('value', 'Start Video');
-        });
-    }
-
-    const detachVideo = function(){
-      startVideoInRoomButtonObj.disabled = false;
-      startVideoInRoomButtonObj.setAttribute('value', 'Start Video');
-
-      conferenceCall.detachVideo();
-
-      startVideoInRoomButtonObj.onclick = startVideo;
-    }
-
-    startVideoInRoomButtonObj.onclick = startVideo;
-
-    leaveRoomButtonObj.onclick = function() {
-      startVideoInRoomButtonObj.disabled = true;
-      leaveRoomButtonObj.disabled = true;
-      joinRoomButtonObj.disabled = false;
-
-      conferenceCall.detachVideo();
-      conferenceCall.hangup();
-      conferenceCall = null;
-    }
-
-  </script>
+    </script>
+  </body>
 </html>
