@@ -27,11 +27,11 @@ var Call = function(clientObj, callID, params, listeners) {
   var {
     activateAudio = true,
     tagId = "apidaze-audio-video-container-id-" + randomString,
-    audioParams = {},
+    audioParams = {}
   } = params;
 
   const videoParams = {
-    activateScreenShare: false,
+    activateScreenShare: false
   };
 
   if (videoParams.activateScreenShare === true) {
@@ -151,7 +151,7 @@ var Call = function(clientObj, callID, params, listeners) {
   }
 
   var GUMConstraints = {
-    audio: this.activateAudio,
+    audio: this.activateAudio
   };
 
   if (this.activateVideo === false) {
@@ -326,20 +326,23 @@ function enumerateDevices({ audio = true, video = false }) {
   return new Promise((resolve, reject) => {
     navigator.mediaDevices
       .enumerateDevices()
-      .then((devices) => {
-        const filteredDevices = devices.reduce((reducedDevices, currentDevice) => {
-          const { kind } = currentDevice;
+      .then(devices => {
+        const filteredDevices = devices.reduce(
+          (reducedDevices, currentDevice) => {
+            const { kind } = currentDevice;
 
-          if (audio && (kind === 'audioinput' || kind === 'audiooutput')) {
-            return [ ...reducedDevices, currentDevice ];
-          }
+            if (audio && (kind === "audioinput" || kind === "audiooutput")) {
+              return [...reducedDevices, currentDevice];
+            }
 
-          if (video && kind === 'videoinput') {
-            return [ ...reducedDevices, currentDevice ];
-          }
+            if (video && kind === "videoinput") {
+              return [...reducedDevices, currentDevice];
+            }
 
-          return reducedDevices;
-        }, []);
+            return reducedDevices;
+          },
+          []
+        );
 
         resolve(filteredDevices);
       })
@@ -366,12 +369,13 @@ function enumerateAudioDevices() {
  */
 function attachSinkId(mediaElement, sinkId) {
   return new Promise((resolve, reject) => {
-    if (typeof mediaElement.sinkId !== 'undefined') {
-      mediaElement.setSinkId(sinkId)
+    if (typeof mediaElement.sinkId !== "undefined") {
+      mediaElement
+        .setSinkId(sinkId)
         .then(resolve)
         .catch(reject);
     } else {
-      reject('The browser does not support output device selection.');
+      reject("The browser does not support output device selection.");
     }
   });
 }
@@ -393,13 +397,13 @@ function setAudioInputDevice(deviceId) {
           }
         }
       })
-      .then((stream) => {
+      .then(stream => {
         const audioTracks = stream.getAudioTracks();
         const newAudioTrack = audioTracks[0];
 
         const audioSender = this.peerConnection
           .getSenders()
-          .find((sender) => sender.track.kind === 'audio');
+          .find(sender => sender.track.kind === "audio");
 
         audioSender
           .replaceTrack(newAudioTrack)
@@ -428,13 +432,13 @@ function setVideoInputDevice(deviceId) {
           }
         }
       })
-      .then((stream) => {
+      .then(stream => {
         const videoTracks = stream.getVideoTracks();
         const newVideoTrack = videoTracks[0];
 
         const videoSender = this.peerConnection
           .getSenders()
-          .find((sender) => sender.track.kind === 'Video');
+          .find(sender => sender.track.kind === "video");
 
         videoSender
           .replaceTrack(newVideoTrack)

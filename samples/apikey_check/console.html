@@ -14,11 +14,9 @@
 */
 
 var apiKey = "YOUR_API_KEY";
-var wsurl = "wss://fs-us-ny-1.apidaze.io:8082";
 
 var APIdazeClientObj = new APIdaze.CLIENT({
   apiKey: apiKey,
-  wsurl: wsurl,
   debug: true,
   onReady: function() {
     alert("Success !");
