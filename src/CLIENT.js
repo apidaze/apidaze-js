@@ -8,12 +8,20 @@ var STATUS_READY = 2;
 var LOG_PREFIX = "APIdaze-" + __VERSION__ + " | CLIENT |";
 var LOGGER = new Logger(false, LOG_PREFIX);
 
+const REGIONS = {
+  "us-east": "us1",
+  "us-west": "us2",
+  "eu-central": "eu1",
+  "eu-west": "eu2",
+  "ap-southeast": "ap1"
+};
+
 var CLIENT = function(configuration = {}) {
   let {
     apiKey,
-    wsurl,
-    forcewsurl,
+    wsurl = undefined,
     sessid = null,
+    region = undefined,
     onReady,
     onDisconnected,
     onError,
@@ -80,8 +88,8 @@ var CLIENT = function(configuration = {}) {
     this._onError({ origin: "CLIENT", message: "WebSocket not supported" });
   }
 
-  if (/wss:\/\//.test(forcewsurl)) {
-    wsurl = forcewsurl;
+  if (!wsurl) {
+    wsurl = computeWebsocketServerUrl(region);
   }
 
   // WebSocket URLs must start with wss:// or ws://localhost (the latter
@@ -723,6 +731,20 @@ const ping = function(userCallback) {
   };
 
   this._sendMessage(JSON.stringify(request));
+};
+
+const computeWebsocketServerUrl = function(region = undefined) {
+  const defaultServerUrl = "wss://webrtc.apidaze.io:4062";
+
+  if (region) {
+    const regionSubdomain = REGIONS[region];
+
+    if (regionSubdomain) {
+      return `wss://webrtc.${regionSubdomain}.apidaze.io:4062`;
+    }
+  }
+
+  return defaultServerUrl;
 };
 
 export default CLIENT;

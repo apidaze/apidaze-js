@@ -42,8 +42,8 @@ function clientReadyResponse(sessid) {
 	}
 }
 
-before(() => {
-	const mockServer = new Server('ws://localhost:9080');
+export function prepareMockWebsocketServer(serverUrl) {
+	const mockServer = new Server(serverUrl);
 	mockServer.on('connection', (server) => {
 		console.log("[WsServer] Got connection");
 	});
@@ -60,18 +60,23 @@ before(() => {
 
 		console.log("[WsServer] received message :", JSONMessage);
 		switch (params.apiKey) {
-			case "apiKeyWithoutExternalScript":
-			console.log("[WsServer] No External Script for this apiKey");
-			mockServer.send(JSON.stringify(invalidExternalScriptResponse()))
-			return;
-			case "testingIfApiKeyIsValid":
-			console.log("[WsServer] Valid API key");
-			// API key validated
-			mockServer.send(JSON.stringify(genericPongResponse(sessid)));
-			mockServer.send('{"wsp_version":"1","id":11925,"method":"verto.clientReady","params":{"reattached_sessions":[],"id":"f28d6fc8-b96d-11e7-85cd-ebd8388b16c8","sessid":"f28d6fc8-b96d-11e7-85cd-ebd8388b16c8"}}');
-			return;
-			default:
-			console.log("[WsServer] apiKey is valid")
+			case "apiKeyWithoutExternalScript":{
+				console.log("[WsServer] No External Script for this apiKey");
+				mockServer.send(JSON.stringify(invalidExternalScriptResponse()))
+				break;
+			}
+			case "testingIfApiKeyIsValid": {
+				console.log("[WsServer] Valid API key");
+				// API key validated
+				mockServer.send(JSON.stringify(genericPongResponse(sessid)));
+				mockServer.send(JSON.stringify(clientReadyResponse(sessid)))
+				break;
+			}
+			default: {
+				console.log("[WsServer] apiKey is valid")
+			}
 		}
 	});
-})
+}
+
+before(()  => prepareMockWebsocketServer('wss://webrtc.apidaze.io:4062'));
