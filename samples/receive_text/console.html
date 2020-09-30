@@ -14,13 +14,10 @@
 */
 
 var apiKey = "YOUR_API_KEY";
-var ws_server = "fs-us-ny-1.apidaze.io:8082";
-var wsurl = "wss://" + ws_server;
 var userid = "johndoe";
 
 var APIdazeClientObj = new APIdaze.CLIENT({
   apiKey: apiKey,
-  wsurl: wsurl,
   debug: true,
   userKeys: {
     command: "auth",
@@ -29,7 +26,7 @@ var APIdazeClientObj = new APIdaze.CLIENT({
   onReady: function() {
     console.log("Logged in !");
     console.log("You may now just run the following cURL command to receive text here");
-    console.log("curl -X POST 'https://api4.apidaze.io/" + apiKey + "/chat/send' --data 'api_secret=YOURAPISECRET&from=me&to=" + userid + "&ws_server=" + ws_server + "&text=Hello'")
+    console.log("curl -X POST 'https://api4.apidaze.io/" + apiKey + "/chat/send' --data 'api_secret=YOURAPISECRET&from=me&to=" + userid + "&ws_server=" + APIdazeClientObj._wsUrl + "&text=Hello'")
   },
   onExternalMessageReceived(messageObj) {
     console.log("Received", JSON.stringify(messageObj));
