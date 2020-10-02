@@ -28,8 +28,12 @@ var CLIENT = function(configuration = {}) {
     onExternalMessageReceived,
     debug,
     userKeys = {},
-    iceServers
+    iceServers = [{ urls: "stun:stun.l.google.com:19302" }]
   } = configuration;
+
+  if (iceServers === null) {
+    iceServers = [];
+  }
 
   /**
    * Functions exposed to user
@@ -41,6 +45,8 @@ var CLIENT = function(configuration = {}) {
   this.disconnect = shutdown.bind(this); // disconnect is kept for compatibility reasons
   this.sendText = sendText.bind(this);
   this.getWebsocketServer = getWebsocketServer.bind(this);
+  this.enumerateDevices = enumerateDevices;
+  this.enumerateAudioDevices = enumerateAudioDevices;
 
   // User defined handlers
   this._onDisconnected = function() {
@@ -746,5 +752,51 @@ const computeWebsocketServerUrl = function(region = undefined) {
 
   return defaultServerUrl;
 };
+
+/**
+ * Get the media devices
+ *
+ * @param {Object} options - Options to indicate what kind of devices should be returned
+ * @param {Boolean} [options.audio] - Indicates if audio devices should be included
+ * @param {Boolean} [options.video] - Indicates if video devices should be included
+ *
+ * @return {Promise} Promise object to provide media devices
+ */
+function enumerateDevices({ audio = true, video = false }) {
+  return new Promise((resolve, reject) => {
+    navigator.mediaDevices
+      .enumerateDevices()
+      .then(devices => {
+        const filteredDevices = devices.reduce(
+          (reducedDevices, currentDevice) => {
+            const { kind } = currentDevice;
+
+            if (audio && (kind === "audioinput" || kind === "audiooutput")) {
+              return [...reducedDevices, currentDevice];
+            }
+
+            if (video && kind === "videoinput") {
+              return [...reducedDevices, currentDevice];
+            }
+
+            return reducedDevices;
+          },
+          []
+        );
+
+        resolve(filteredDevices);
+      })
+      .catch(reject);
+  });
+}
+
+/**
+ * Get the audio devices
+ *
+ * @return {Promise} Promise object to provide audio media devices
+ */
+function enumerateAudioDevices() {
+  return enumerateDevices({ audio: true });
+}
 
 export default CLIENT;
