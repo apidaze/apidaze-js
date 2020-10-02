@@ -26,9 +26,17 @@ var Call = function(clientObj, callID, params, listeners) {
 
   var {
     activateAudio = true,
+    audioInputDeviceId,
+    audioOutputDeviceId,
+    videoInputDeviceId,
     tagId = "apidaze-audio-video-container-id-" + randomString,
-    audioParams = {}
+    audioParams = {},
+    iceServers = clientObj._iceServers
   } = params;
+
+  if (iceServers === null) {
+    iceServers = [];
+  }
 
   const videoParams = {
     activateScreenShare: false
@@ -61,6 +69,7 @@ var Call = function(clientObj, callID, params, listeners) {
   this.activateAudio = activateAudio;
   this.videoParams = videoParams;
   this.audioParams = audioParams;
+  this.iceServers = iceServers;
   this.audioVideoTagId = tagId;
 
   var audioVideoDOMContainerObj = document.getElementById(tagId);
@@ -74,6 +83,14 @@ var Call = function(clientObj, callID, params, listeners) {
   this.remoteAudioVideo.controls = false;
   if (this.activateVideo === false) {
     this.remoteAudioVideo.style.display = "none";
+  }
+
+  if (
+    audioOutputDeviceId &&
+    typeof audioOutputDeviceId === "string" &&
+    audioOutputDeviceId.length > 0
+  ) {
+    attachSinkId(this.remoteAudioVideo, audioOutputDeviceId);
   }
 
   if (audioVideoDOMContainerObj == null) {
@@ -141,8 +158,6 @@ var Call = function(clientObj, callID, params, listeners) {
   this.startLocalAudio = startLocalAudio;
   this.stopLocalVideo = stopLocalVideo;
   this.startLocalVideo = startLocalVideo;
-  this.enumerateDevices = enumerateDevices;
-  this.enumerateAudioDevices = enumerateAudioDevices;
   this.setAudioInputDevice = setAudioInputDevice;
   this.setAudioOutputDevice = setAudioOutputDevice;
 
@@ -154,8 +169,31 @@ var Call = function(clientObj, callID, params, listeners) {
     audio: this.activateAudio
   };
 
+  if (
+    this.activateAudio &&
+    audioInputDeviceId &&
+    typeof audioInputDeviceId === "string" &&
+    audioInputDeviceId.length > 0
+  ) {
+    GUMConstraints.audio = {
+      deviceId: {
+        exact: audioInputDeviceId
+      }
+    };
+  }
+
   if (this.activateVideo === false) {
     GUMConstraints.video = false;
+  } else if (
+    videoInputDeviceId &&
+    typeof videoInputDeviceId === "string" &&
+    videoInputDeviceId.length > 0
+  ) {
+    GUMConstraints.video = {
+      deviceId: {
+        exact: videoInputDeviceId
+      }
+    };
   } else {
     LOGGER.log("Need to set GUMConstraints.video");
     GUMConstraints.video = {
@@ -312,52 +350,6 @@ var Call = function(clientObj, callID, params, listeners) {
       });
   }
 };
-
-/**
- * Get the media devices
- *
- * @param {Object} options - Options to indicate what kind of devices should be returned
- * @param {Boolean} [options.audio] - Indicates if audio devices should be included
- * @param {Boolean} [options.video] - Indicates if video devices should be included
- *
- * @return {Promise} Promise object to provide media devices
- */
-function enumerateDevices({ audio = true, video = false }) {
-  return new Promise((resolve, reject) => {
-    navigator.mediaDevices
-      .enumerateDevices()
-      .then(devices => {
-        const filteredDevices = devices.reduce(
-          (reducedDevices, currentDevice) => {
-            const { kind } = currentDevice;
-
-            if (audio && (kind === "audioinput" || kind === "audiooutput")) {
-              return [...reducedDevices, currentDevice];
-            }
-
-            if (video && kind === "videoinput") {
-              return [...reducedDevices, currentDevice];
-            }
-
-            return reducedDevices;
-          },
-          []
-        );
-
-        resolve(filteredDevices);
-      })
-      .catch(reject);
-  });
-}
-
-/**
- * Get the audio devices
- *
- * @return {Promise} Promise object to provide audio media devices
- */
-function enumerateAudioDevices() {
-  return enumerateDevices({ audio: true });
-}
 
 /**
  * Sets the ID of the audio device to use for output on the given mediaElement
@@ -795,7 +787,7 @@ function attachStreamToPeerConnection() {
  * function.
  */
 function createPeerConnection() {
-  var pc_config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+  var pc_config = { iceServers: this.iceServers };
   var pc_constraints = {
     optional: [{ DtlsSrtpKeyAgreement: true }, { googIPv6: false }],
     mandatory: {
