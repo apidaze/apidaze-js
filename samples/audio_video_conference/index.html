@@ -111,6 +111,12 @@
       var conferenceCall = null;
 
       function gotDevices(deviceInfos) {
+        selectors.forEach(select => {
+          while (select.firstChild) {
+            select.removeChild(select.firstChild);
+          }
+        });
+
         for (const deviceInfo of deviceInfos) {
           const option = document.createElement('option');
           option.value = deviceInfo.deviceId;
@@ -127,7 +133,10 @@
 
       function changeAudioDestination(event) {
         const audioDestination = event.target.value;
-        conferenceCall.setAudioOutputDevice(audioDestination);
+
+        if (conferenceCall) {
+          conferenceCall.setAudioOutputDevice(audioDestination);
+        }
       }
 
       audioOutputSelect.onchange = changeAudioDestination;
@@ -136,7 +145,9 @@
       audioInputSelect.onchange = function (event) {
         const audioInputDeviceId = event.target.value;
 
-        conferenceCall.setAudioInputDevice(audioInputDeviceId);
+        if (conferenceCall) {
+          conferenceCall.setAudioInputDevice(audioInputDeviceId);
+        }
       };
 
       checkButtonObj.onclick = function() {
@@ -148,6 +159,13 @@
             debug: true,
             onReady: function(sessionObj) {
               joinRoomButtonObj.disabled = false;
+
+              // populate user media devices
+              APIdazeClientObj
+                .enumerateAudioDevices()
+                .then(gotDevices);
+
+              document.querySelector('#mediaDevices.hidden').classList.remove('hidden');
             },
             onError: function(errorMessage){
               alert("Got error : " + errorMessage);
@@ -163,6 +181,8 @@
           {
             command: "joinRoom",
             userName: "guest",
+            audioInputDeviceId: audioInputSelect.value,
+            audioOutputDeviceId: audioOutputSelect.value,
           },
           {
             onRoomMembersInitialList: function(members) {
@@ -183,14 +203,6 @@
               console.log('I left the room');
               joinRoomButtonObj.disabled = false;
               leaveRoomButtonObj.disabled = true;
-            },
-            onAnswer: function() {
-              // populate user media devices
-              conferenceCall
-                .enumerateAudioDevices()
-                .then(gotDevices);
-
-              document.querySelector('#mediaDevices.hidden').classList.remove('hidden');
             }
           }
         );
