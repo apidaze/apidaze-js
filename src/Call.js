@@ -397,6 +397,8 @@ function setAudioInputDevice(deviceId) {
           .getSenders()
           .find(sender => sender.track.kind === "audio");
 
+        audioSender.track.stop();
+
         audioSender
           .replaceTrack(newAudioTrack)
           .then(resolve)
