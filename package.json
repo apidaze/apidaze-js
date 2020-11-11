@@ -53,7 +53,7 @@
     "should": "^13.2.3",
     "webpack": "^3.4.1",
     "webpack-cli": "^3.3.12",
-    "webpack-dev-server": "^2.6.1",
+    "webpack-dev-server": "^3.1.11",
     "webrtc-adapter": "6.0.4"
   }
 }
