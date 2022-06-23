@@ -44,7 +44,7 @@
     "eslint-plugin-cypress": "^2.0.1",
     "eslint-plugin-import": "^2.16.0",
     "html-webpack-plugin": "^2.30.1",
-    "jsdom": "11.3.0",
+    "jsdom": "16.5.0",
     "jsdom-global": "3.0.2",
     "mocha": "^5.2.0",
     "mock-socket": "^7.0.0",
